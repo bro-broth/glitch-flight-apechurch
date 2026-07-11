@@ -5,10 +5,11 @@
 ## Что внутри
 
 ```
-components/glitch-flight/      ← вся игра (5 файлов)
+components/glitch-flight/      ← вся игра (6 файлов)
   MyGame.tsx                   ← лайфсайкл: playGame / handleReset / handlePlayAgain / handleRewatch / handleCashOut
   MyGameWindow.tsx             ← сцена полёта (облака, койны, дроид, глитч, краш)
-  MyGameSetupCard.tsx          ← панель ставки / APE OUT / результаты
+  MyGameSetupCard.tsx          ← панель: ставка, Auto Ape Out (целевой X), APE OUT, результаты
+  MyGameResultsModal.tsx       ← своё окно результатов в стиле apedroidz
   myGameConfig.ts              ← конфиг + provably-fair формула crash point (порт с вашего game-server)
   glitch-flight.styles.css     ← анимации
 public/glitch-flight/          ← ассеты, всего ~5.1MB (лимит 10MB)
@@ -16,7 +17,7 @@ public/glitch-flight/          ← ассеты, всего ~5.1MB (лимит 1
 metadata.json                  ← заявка
 ```
 
-Механика: ставка → он-чейн random word детерминированно задаёт crash point → мультипликатор растёт по экспоненте → APE OUT до краша = выигрыш bet × X, иначе 0. Rewatch воспроизводит раунд из того же random word без новой транзакции.
+Механика: ставка + целевой множитель Auto Ape Out (по умолчанию 2.00x, можно выключить) → он-чейн random word детерминированно задаёт crash point → мультипликатор растёт по экспоненте → выход на цели автоматически или раньше вручную (APE OUT) = выигрыш bet × X, иначе 0. Rewatch воспроизводит раунд из того же random word без новой транзакции. Оба паттерна (цель заранее и живой кэшаут) прямо разрешены документацией (типы Limbo и Crash) и повторяют принятый референс jnkyz-skate-or-crash. Окно результатов — собственное (`MyGameResultsModal.tsx`, стиль apedroidz): встроенная платформенная модалка отключена легально — `onPlayAgain` в `GameWindow` опционален, shared-файлы не тронуты.
 
 ## ⚠️ Перед подачей ОБЯЗАТЕЛЬНО заполнить
 

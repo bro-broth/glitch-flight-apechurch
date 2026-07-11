@@ -114,12 +114,10 @@ function Cloud({ cfg }: { cfg: CloudConfig }): React.ReactElement {
 function GraphicSVG({ color }: { color: string }): React.ReactElement {
     return (
         <svg
-            width="1562"
-            height="550"
             viewBox="0 0 1562 550"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ width: "100%", display: "block", filter: `drop-shadow(0 0 9.7px ${color})`, transition: "filter 0.4s ease-out" }}
+            style={{ width: "100%", height: "auto", display: "block", filter: `drop-shadow(0 0 9.7px ${color})`, transition: "filter 0.4s ease-out" }}
         >
             <defs>
                 <linearGradient id="gf-grad" x1="774.5" y1="12.2031" x2="774.5" y2="564.203" gradientUnits="userSpaceOnUse">
@@ -443,20 +441,24 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 </div>
             )}
 
-            {/* ── Trajectory graphic — anchored to the droid's flame ── */}
+            {/* ── Trajectory graphic — its top-right tip is glued to the droid's
+                 flame: the droid is centered at (50%, 50%), so the tip sits at
+                 the horizontal center, slightly above the vertical center.
+                 Entrance mirrors the droid's motion exactly so they fly in as
+                 one unit. ── */}
             <AnimatePresence>
                 {showGraphic && (
                     <motion.div
                         key={`graphic-${enterKey}`}
-                        initial={{ x: "-40vw", y: "28vh", opacity: 0 }}
+                        initial={{ x: "-38vw", y: "30vh", opacity: 0 }}
                         animate={{ x: 0, y: 0, opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1], opacity: { duration: phase === "crashed" ? 0.15 : 0.5 } }}
+                        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], opacity: { duration: phase === "crashed" ? 0.15 : 0.3 } }}
                         style={{
                             position: "absolute",
                             width: "62%",
                             right: "50%",
-                            top: `calc(30% + ${Math.round(60 * sf)}px)`,
+                            top: `calc(50% - ${Math.round(droidW * 0.1)}px)`,
                             zIndex: 2,
                             pointerEvents: "none",
                         }}

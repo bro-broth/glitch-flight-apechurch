@@ -36,6 +36,19 @@ export const myGame: Game = {
 export const MIN_BET = 1;
 export const MAX_BET = 100;
 
+/**
+ * Bounds for the pre-round auto ape-out target. The ceiling matches the
+ * highest possible crash point (CAP_TIER_3) — a target above it can never win.
+ */
+export const AUTO_CASHOUT_MIN = 1.01;
+export const AUTO_CASHOUT_MAX = 65.51;
+export const AUTO_CASHOUT_DEFAULT = 2.0;
+
+export function clampAutoCashout(value: number): number {
+    if (!Number.isFinite(value)) return AUTO_CASHOUT_DEFAULT;
+    return parseFloat(Math.min(AUTO_CASHOUT_MAX, Math.max(AUTO_CASHOUT_MIN, value)).toFixed(2));
+}
+
 // ─── Crash math ───────────────────────────────────────────────────────────────
 // The on-chain random word fully determines the crash point, so a round can be
 // replayed (rewatch) without a new transaction and audited after the fact.

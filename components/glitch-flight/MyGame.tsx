@@ -14,7 +14,9 @@ import {
     FlightRound,
     MIN_BET,
     MAX_BET,
+    AUTO_CASHOUT_DEFAULT,
 } from "./myGameConfig";
+import MyGameResultsModal from "./MyGameResultsModal";
 import { bytesToHex, Hex } from "viem";
 import { toast } from "sonner";
 import "./glitch-flight.styles.css";
@@ -47,6 +49,13 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     const [gameOver, setGameOver] = useState<boolean>(false);
     const [round, setRound] = useState<FlightRound>(INITIAL_ROUND);
     const [sfxMuted, setSfxMuted] = useState<boolean>(false);
+    // Pre-round target multiplier: the droid apes out automatically when the
+    // multiplier reaches it. null = manual-only mode.
+    const [autoCashOutAt, setAutoCashOutAt] = useState<number | null>(AUTO_CASHOUT_DEFAULT);
+    const autoCashOutRef = useRef<number | null>(autoCashOutAt);
+    useEffect(() => {
+        autoCashOutRef.current = autoCashOutAt;
+    }, [autoCashOutAt]);
 
     // ── Timers ── all animation timers live here so handleReset can kill them.
     const rafRef = useRef<number | null>(null);
@@ -111,13 +120,14 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
 
     /**
      * Runs one flight: immediate take-off → exponential climb → crash (or
-     * until the player cashes out). `autoCashOutAt` reproduces a recorded
-     * cash-out during rewatch.
+     * until the player apes out, manually or at the pre-set target).
+     * `replayCashOutAt` reproduces a recorded cash-out during rewatch.
      */
     const startFlight = useCallback(
-        (crashPoint: number, autoCashOutAt: number | null, rewatchPayout: number | null): void => {
+        (crashPoint: number, replayCashOutAt: number | null, rewatchPayout: number | null): void => {
             crashPointRef.current = crashPoint;
             cashedOutRef.current = null;
+            const isRewatch = rewatchPayout !== null;
 
             const takeoff = performance.now();
             setRound({ ...INITIAL_ROUND, phase: "running", multiplier: 1.0 });
@@ -127,13 +137,29 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
 
                 // Rewatch: reproduce the recorded cash-out at the same multiplier.
                 if (
-                    autoCashOutAt !== null &&
+                    replayCashOutAt !== null &&
                     cashedOutRef.current === null &&
-                    m >= autoCashOutAt
+                    m >= replayCashOutAt
                 ) {
-                    cashedOutRef.current = autoCashOutAt;
-                    setRound((r) => ({ ...r, multiplier: autoCashOutAt, cashedOutAt: autoCashOutAt }));
+                    cashedOutRef.current = replayCashOutAt;
+                    setRound((r) => ({ ...r, multiplier: replayCashOutAt, cashedOutAt: replayCashOutAt }));
                     finishRound(rewatchPayout ?? 0, crashPoint, 1800);
+                    return;
+                }
+
+                // Live round: the pre-set target fires before the crash check so a
+                // frame that jumps past both still pays the legitimately lower target.
+                const target = autoCashOutRef.current;
+                if (
+                    !isRewatch &&
+                    target !== null &&
+                    cashedOutRef.current === null &&
+                    m >= target &&
+                    target < crashPoint
+                ) {
+                    cashedOutRef.current = target;
+                    setRound((r) => ({ ...r, multiplier: target, cashedOutAt: target }));
+                    finishRound(activeBetRef.current * target, crashPoint, 1800);
                     return;
                 }
 
@@ -293,7 +319,9 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                     currentGameId={currentGameId}
                     isLoading={isLoading}
                     isGameFinished={gameOver}
-                    onPlayAgain={handlePlayAgain}
+                    // onPlayAgain deliberately omitted: it disables the built-in
+                    // GameResultsModal so the game-styled MyGameResultsModal below
+                    // handles the end-of-round flow instead.
                     playAgainText={playAgainText}
                     onRewatch={handleRewatch}
                     onReset={() => handleReset(false)}
@@ -303,10 +331,20 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                     isUserOriginalPlayer={true}
                     showPNL={shouldShowPNL}
                     isGamePaused={false}
-                    resultModalDelayMs={1000}
                     onSfxMutedChange={setSfxMuted}
                 >
                     <MyGameWindow round={round} sfxMuted={sfxMuted} />
+                    <MyGameResultsModal
+                        open={gameOver}
+                        payout={payout}
+                        betAmount={activeBetRef.current || betAmount}
+                        cashedOutAt={round.cashedOutAt}
+                        crashPoint={round.revealedCrashPoint}
+                        playAgainText={playAgainText}
+                        onPlayAgain={handlePlayAgain}
+                        onRewatch={handleRewatch}
+                        onReset={() => handleReset(false)}
+                    />
                 </GameWindow>
 
                 <MyGameSetupCard
@@ -328,6 +366,8 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                     isGamePaused={false}
                     minBet={MIN_BET}
                     maxBet={MAX_BET}
+                    autoCashOutAt={autoCashOutAt}
+                    setAutoCashOutAt={setAutoCashOutAt}
                 />
             </div>
         </div>
