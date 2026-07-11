@@ -1,0 +1,36 @@
+{
+  "team": "apedroidz",
+  "gameName": "glitch-flight",
+  "displayTitle": "Glitch Flight",
+  "description": "The glitch droid takes off and the multiplier climbs — cash out before the crash to win. The longer you ride, the bigger the payout, but one glitch too far and you lose it all.",
+  "authors": [
+    {
+      "name": "ApeDroidz",
+      "telegram": "YOUR_TELEGRAM_USERNAME"
+    }
+  ],
+  "revenueShare": [
+    {
+      "name": "ApeDroidz",
+      "telegram": "YOUR_TELEGRAM_USERNAME",
+      "address": "0x0000000000000000000000000000000000000000",
+      "share": 100
+    }
+  ],
+  "status": "pending",
+  "category": "arcade",
+  "tags": [
+    "crash",
+    "arcade",
+    "flight",
+    "multiplier"
+  ],
+  "thumbnail": "/glitch-flight/card.png",
+  "banner": "/glitch-flight/banner.png",
+  "mainComponent": "MyGame.tsx",
+  "windowComponent": "MyGameWindow.tsx",
+  "setupComponent": "MyGameSetupCard.tsx",
+  "configFile": "myGameConfig.ts",
+  "version": "1.0.0",
+  "submittedAt": "2026-07-12"
+}
