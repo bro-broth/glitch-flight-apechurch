@@ -1,15 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
 import { Game } from "@/lib/games";
 import BetAmountInput from "@/components/shared/BetAmountInput";
 import { FlightRound } from "./myGameConfig";
@@ -37,6 +28,24 @@ interface MyGameSetupCardProps {
     maxBet: number;
 }
 
+/** Tiny uppercase mono label — the Glitch Flight house style. */
+function Label({ children }: { children: React.ReactNode }): React.ReactElement {
+    return (
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
+            {children}
+        </span>
+    );
+}
+
+function StatRow({ label, value, valueClass = "text-white/80" }: { label: string; value: string; valueClass?: string }): React.ReactElement {
+    return (
+        <div className="w-full flex justify-between items-center gap-2">
+            <Label>{label}</Label>
+            <span className={`font-mono text-xs font-black ${valueClass}`}>{value}</span>
+        </div>
+    );
+}
+
 const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
     game,
     onPlay,
@@ -56,7 +65,6 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
     minBet,
     maxBet,
 }) => {
-    const themeColorBackground = game.themeColorBackground;
     const usdMode = false;
 
     const isFlying = round.phase === "running" && round.cashedOutAt === null;
@@ -70,194 +78,134 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
     const canPlaceBet =
         betAmount >= minBet && betAmount <= maxBet && betAmount <= walletBalance && !isGamePaused && !isLoading;
 
-    const roundStats = (showPayout: boolean): React.ReactElement => (
-        <div className="font-roboto flex flex-col gap-8">
+    const won = (payout ?? 0) > 0;
+
+    return (
+        <div className="lg:basis-1/3 rounded-2xl border border-white/10 bg-[#05070c] p-5 sm:p-6 flex flex-col text-white selection:bg-white/20">
             {inReplayMode && (
-                <p className="mt-2 font-semibold text-3xl text-center" style={{ color: themeColorBackground }}>
+                <p className="mb-4 font-mono text-xs font-black uppercase tracking-[0.3em] text-[#3b82f6] text-center">
                     Replay Mode
                 </p>
             )}
 
-            <div className="w-full flex flex-col items-center gap-2 font-medium text-xs text-[#91989C]">
-                <div className="w-full flex justify-between items-center gap-2">
-                    <p>Bet Amount</p>
-                    <p className="text-right">{formatApe(betAmount)}</p>
-                </div>
-                {showPayout ? (
-                    <>
-                        <div className="w-full flex justify-between items-center gap-2">
-                            <p>Total Payout</p>
-                            <p className={`text-right font-semibold ${(payout ?? 0) > 0 ? "text-green-500" : "text-red-400"}`}>
-                                {formatApe(payout ?? 0)}
-                            </p>
-                        </div>
-                        {round.cashedOutAt !== null && (
-                            <div className="w-full flex justify-between items-center gap-2">
-                                <p>Aped Out At</p>
-                                <p className="text-right text-green-500 font-semibold">{round.cashedOutAt.toFixed(2)}x</p>
-                            </div>
-                        )}
-                        {round.revealedCrashPoint !== null && (
-                            <div className="w-full flex justify-between items-center gap-2">
-                                <p>Crash Point</p>
-                                <p className="text-right">{round.revealedCrashPoint.toFixed(2)}x</p>
-                            </div>
-                        )}
-                        <div className="w-full flex justify-between items-center gap-2">
-                            <p>Wallet Balance</p>
-                            <p className="text-right">{formatApe(walletBalance)}</p>
-                        </div>
-                    </>
-                ) : (
-                    <div className="w-full flex justify-between items-center gap-2">
-                        <p>Potential Win</p>
-                        <p className="text-right text-green-500 font-semibold">{formatApe(potentialWin)}</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-
-    return (
-        <Card className="lg:basis-1/3 p-6 flex flex-col">
             {currentView === 0 && (
                 <>
-                    <CardContent className="font-roboto">
-                        <Button
-                            onClick={onPlay}
-                            className="lg:hidden w-full"
-                            style={{ backgroundColor: themeColorBackground, borderColor: themeColorBackground }}
-                            disabled={!canPlaceBet}
-                        >
-                            Launch Flight
-                        </Button>
+                    <BetAmountInput
+                        min={0}
+                        max={Math.min(maxBet, walletBalance)}
+                        step={0.1}
+                        value={betAmount}
+                        onChange={setBetAmount}
+                        balance={walletBalance}
+                        usdMode={usdMode}
+                        setUsdMode={() => {}}
+                        disabled={isLoading}
+                        themeColorBackground={game.themeColorBackground}
+                    />
 
-                        <div className="mt-5">
-                            <BetAmountInput
-                                min={0}
-                                max={Math.min(maxBet, walletBalance)}
-                                step={0.1}
-                                value={betAmount}
-                                onChange={setBetAmount}
-                                balance={walletBalance}
-                                usdMode={usdMode}
-                                setUsdMode={() => {}}
-                                disabled={isLoading}
-                                themeColorBackground={themeColorBackground}
-                            />
-                        </div>
-                    </CardContent>
+                    <div className="grow" />
 
-                    <div className="grow"></div>
+                    <div className="mt-8 flex flex-col gap-2">
+                        <StatRow label="Max Bet Per Flight" value={`${maxBet.toLocaleString([], { maximumFractionDigits: 0 })} APE`} />
+                        <StatRow label="How To Play" value="Ape out before the crash" />
+                    </div>
 
-                    <CardFooter className="mt-8 w-full flex flex-col font-roboto">
-                        <div className="w-full flex flex-col items-center gap-2 font-medium text-xs text-[#91989C]">
-                            <div className="w-full flex justify-between items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                    <p>Max Bet Per Flight</p>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <Info size={16} />
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Maximum amount you can bet per round</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                                <p className="text-right">{maxBet.toLocaleString([], { maximumFractionDigits: 0 })} APE</p>
-                            </div>
-                            <div className="w-full flex justify-between items-center gap-2">
-                                <p>How To Play</p>
-                                <p className="text-right">Cash out before the crash</p>
-                            </div>
-                        </div>
-
-                        <Button
-                            onClick={onPlay}
-                            className="hidden lg:flex mt-6 w-full"
-                            style={{ backgroundColor: themeColorBackground, borderColor: themeColorBackground }}
-                            disabled={!canPlaceBet}
-                        >
-                            Launch Flight
-                        </Button>
-                    </CardFooter>
+                    <button
+                        type="button"
+                        onClick={onPlay}
+                        disabled={!canPlaceBet}
+                        className="mt-6 w-full rounded-xl bg-white py-3.5 font-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30 disabled:hover:bg-white"
+                    >
+                        Launch Flight
+                    </button>
                 </>
             )}
 
             {currentView === 1 && (
-                <CardContent className="grow font-roboto flex flex-col-reverse lg:flex-col lg:justify-between gap-8">
-                    {roundStats(false)}
-
-                    <div className="flex lg:flex-col justify-center items-center">
-                        <div className="font-roboto flex flex-col items-center gap-3 w-full">
-                            <Button
-                                onClick={onCashOut}
-                                className="w-full text-lg font-bold py-6"
-                                style={{
-                                    backgroundColor: isFlying ? "#22c55e" : hasCashedOut ? "#16a34a" : "#6b7280",
-                                    borderColor: isFlying ? "#22c55e" : hasCashedOut ? "#16a34a" : "#6b7280",
-                                }}
-                                disabled={!isFlying}
-                            >
-                                {hasCashedOut
-                                    ? `APED OUT ${round.cashedOutAt!.toFixed(2)}x`
-                                    : isFlying
-                                        ? "APE OUT"
-                                        : round.phase === "crashed"
-                                            ? "CRASHED"
-                                            : "Preparing launch…"}
-                            </Button>
-
-                            {isFlying && (
-                                <p className="text-sm text-center text-muted-foreground animate-pulse">
-                                    Cash out now for {formatApe(potentialWin)}
-                                </p>
-                            )}
-                        </div>
+                <>
+                    <div className="flex flex-col gap-2">
+                        <StatRow label="Bet Amount" value={formatApe(betAmount)} />
+                        <StatRow
+                            label="Potential Win"
+                            value={formatApe(potentialWin)}
+                            valueClass="text-[#00FF94] drop-shadow-[0_0_10px_rgba(0,255,148,0.45)]"
+                        />
                     </div>
-                </CardContent>
+
+                    <div className="grow" />
+
+                    <div className="mt-8 flex flex-col items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={onCashOut}
+                            disabled={!isFlying}
+                            className={`w-full rounded-xl py-4 font-mono text-base font-black uppercase tracking-[0.2em] transition-all ${
+                                isFlying
+                                    ? "bg-[#00FF94] text-black shadow-[0_0_28px_rgba(0,255,148,0.45)] hover:bg-[#33ffa9]"
+                                    : hasCashedOut
+                                        ? "border border-[#00FF94]/40 bg-transparent text-[#00FF94]"
+                                        : "bg-white/10 text-white/40"
+                            }`}
+                        >
+                            {hasCashedOut
+                                ? `Aped Out ${round.cashedOutAt!.toFixed(2)}x`
+                                : isFlying
+                                    ? "Ape Out"
+                                    : round.phase === "crashed"
+                                        ? "Crashed"
+                                        : "Launching…"}
+                        </button>
+
+                        {isFlying && (
+                            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/30 animate-pulse text-center">
+                                Cash out now for {formatApe(potentialWin)}
+                            </p>
+                        )}
+                    </div>
+                </>
             )}
 
             {currentView === 2 && (
-                <CardContent className="grow font-roboto flex flex-col lg:justify-between gap-8">
-                    <div className="lg:hidden">
-                        <Button
-                            className="w-full"
-                            style={{ backgroundColor: themeColorBackground, borderColor: themeColorBackground }}
-                            onClick={onPlayAgain}
-                            disabled={isGamePaused}
-                        >
-                            {playAgainText}
-                        </Button>
-
-                        <Button className="w-full mt-3" variant="secondary" onClick={onReset}>
-                            Change Bet
-                        </Button>
+                <>
+                    <div className="flex flex-col gap-2">
+                        <StatRow label="Bet Amount" value={formatApe(betAmount)} />
+                        <StatRow
+                            label="Total Payout"
+                            value={formatApe(payout ?? 0)}
+                            valueClass={won ? "text-[#00FF94] drop-shadow-[0_0_10px_rgba(0,255,148,0.45)]" : "text-red-400"}
+                        />
+                        {round.cashedOutAt !== null && (
+                            <StatRow label="Aped Out At" value={`${round.cashedOutAt.toFixed(2)}x`} valueClass="text-[#00FF94]" />
+                        )}
+                        {round.revealedCrashPoint !== null && (
+                            <StatRow label="Crash Point" value={`${round.revealedCrashPoint.toFixed(2)}x`} />
+                        )}
+                        <StatRow label="Wallet Balance" value={formatApe(walletBalance)} />
                     </div>
 
-                    {roundStats(true)}
+                    <div className="grow" />
 
-                    <CardFooter className="w-full hidden lg:block">
-                        <div className="w-full flex flex-col gap-4">
-                            <Button
-                                className="w-full"
-                                style={{ backgroundColor: themeColorBackground, borderColor: themeColorBackground }}
-                                onClick={onPlayAgain}
-                                disabled={isGamePaused}
-                            >
-                                {playAgainText}
-                            </Button>
+                    <div className="mt-8 flex flex-col gap-3">
+                        <button
+                            type="button"
+                            onClick={onPlayAgain}
+                            disabled={isGamePaused}
+                            className="w-full rounded-xl bg-white py-3.5 font-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30"
+                        >
+                            {playAgainText}
+                        </button>
 
-                            <Button className="w-full" variant="secondary" onClick={onReset}>
-                                Change Bet
-                            </Button>
-                        </div>
-                    </CardFooter>
-                </CardContent>
+                        <button
+                            type="button"
+                            onClick={onReset}
+                            className="w-full rounded-xl border border-white/15 bg-transparent py-3 font-mono text-xs font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
+                        >
+                            Change Bet
+                        </button>
+                    </div>
+                </>
             )}
-        </Card>
+        </div>
     );
 };
 

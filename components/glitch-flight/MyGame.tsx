@@ -12,7 +12,6 @@ import {
     multiplierAt,
     INITIAL_ROUND,
     FlightRound,
-    COUNTDOWN_SECONDS,
     MIN_BET,
     MAX_BET,
 } from "./myGameConfig";
@@ -52,7 +51,6 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     // ── Timers ── all animation timers live here so handleReset can kill them.
     const rafRef = useRef<number | null>(null);
     const timeoutsRef = useRef<number[]>([]);
-    const intervalRef = useRef<number | null>(null);
 
     // ── Round bookkeeping ──
     const crashPointRef = useRef<number>(0);
@@ -80,10 +78,6 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
         if (rafRef.current !== null) {
             cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
-        }
-        if (intervalRef.current !== null) {
-            window.clearInterval(intervalRef.current);
-            intervalRef.current = null;
         }
         timeoutsRef.current.forEach((id) => window.clearTimeout(id));
         timeoutsRef.current = [];
@@ -116,63 +110,48 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     );
 
     /**
-     * Runs one flight: countdown → exponential climb → crash (or until the
-     * player cashes out). `autoCashOutAt` reproduces a recorded cash-out
-     * during rewatch.
+     * Runs one flight: immediate take-off → exponential climb → crash (or
+     * until the player cashes out). `autoCashOutAt` reproduces a recorded
+     * cash-out during rewatch.
      */
     const startFlight = useCallback(
         (crashPoint: number, autoCashOutAt: number | null, rewatchPayout: number | null): void => {
             crashPointRef.current = crashPoint;
             cashedOutRef.current = null;
 
-            let secondsLeft = COUNTDOWN_SECONDS;
-            setRound({ ...INITIAL_ROUND, phase: "countdown", countdown: secondsLeft });
+            const takeoff = performance.now();
+            setRound({ ...INITIAL_ROUND, phase: "running", multiplier: 1.0 });
 
-            intervalRef.current = window.setInterval(() => {
-                secondsLeft -= 1;
-                if (secondsLeft > 0) {
-                    setRound((r) => ({ ...r, countdown: secondsLeft }));
+            const tick = (now: number): void => {
+                const m = multiplierAt(now - takeoff);
+
+                // Rewatch: reproduce the recorded cash-out at the same multiplier.
+                if (
+                    autoCashOutAt !== null &&
+                    cashedOutRef.current === null &&
+                    m >= autoCashOutAt
+                ) {
+                    cashedOutRef.current = autoCashOutAt;
+                    setRound((r) => ({ ...r, multiplier: autoCashOutAt, cashedOutAt: autoCashOutAt }));
+                    finishRound(rewatchPayout ?? 0, crashPoint, 1800);
                     return;
                 }
-                if (intervalRef.current !== null) {
-                    window.clearInterval(intervalRef.current);
-                    intervalRef.current = null;
+
+                if (m >= crashPoint) {
+                    setRound((r) => ({
+                        ...r,
+                        phase: "crashed",
+                        multiplier: crashPoint,
+                    }));
+                    const lostPayout = cashedOutRef.current === null ? 0 : rewatchPayout ?? 0;
+                    finishRound(lostPayout, crashPoint, 2000);
+                    return;
                 }
 
-                const takeoff = performance.now();
-                setRound((r) => ({ ...r, phase: "running", multiplier: 1.0 }));
-
-                const tick = (now: number): void => {
-                    const m = multiplierAt(now - takeoff);
-
-                    // Rewatch: reproduce the recorded cash-out at the same multiplier.
-                    if (
-                        autoCashOutAt !== null &&
-                        cashedOutRef.current === null &&
-                        m >= autoCashOutAt
-                    ) {
-                        cashedOutRef.current = autoCashOutAt;
-                        setRound((r) => ({ ...r, multiplier: autoCashOutAt, cashedOutAt: autoCashOutAt }));
-                        finishRound(rewatchPayout ?? 0, crashPoint, 1800);
-                        return;
-                    }
-
-                    if (m >= crashPoint) {
-                        setRound((r) => ({
-                            ...r,
-                            phase: "crashed",
-                            multiplier: crashPoint,
-                        }));
-                        const lostPayout = cashedOutRef.current === null ? 0 : rewatchPayout ?? 0;
-                        finishRound(lostPayout, crashPoint, 2000);
-                        return;
-                    }
-
-                    setRound((r) => ({ ...r, multiplier: m }));
-                    rafRef.current = requestAnimationFrame(tick);
-                };
+                setRound((r) => ({ ...r, multiplier: m }));
                 rafRef.current = requestAnimationFrame(tick);
-            }, 1000);
+            };
+            rafRef.current = requestAnimationFrame(tick);
         },
         [finishRound]
     );

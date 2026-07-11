@@ -4,10 +4,6 @@
     from { transform: translate(0px, 0px) rotate(-24deg); }
     to   { transform: translate(-145vw, 64vh) rotate(-24deg); }
 }
-@keyframes gf-fill-progress {
-    from { clip-path: inset(0 100% 0 0); }
-    to   { clip-path: inset(0 0% 0 0); }
-}
 @keyframes gf-land-enter {
     from { transform: translateY(100%); }
     to   { transform: translateY(0%); }

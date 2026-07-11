@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ASSET_BASE, FlightRound, COUNTDOWN_SECONDS } from "./myGameConfig";
+import { ASSET_BASE, FlightRound } from "./myGameConfig";
 
 // ─── Seeded RNG — stable cloud/coin layout across renders ────────────────────
 function seededRand(seed: number): () => number {
@@ -139,66 +139,21 @@ function GraphicSVG({ color }: { color: string }): React.ReactElement {
     );
 }
 
-function LogoCountdown({ fillKey, countdown, sf }: { fillKey: number; countdown: number; sf: number }): React.ReactElement {
-    const lw = Math.round(144 * Math.max(0.55, sf));
-    const lh = Math.round(151 * Math.max(0.55, sf));
-    const fs = Math.round(45 * Math.max(0.6, sf));
-    return (
-        <div
-            style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: Math.round(16 * Math.max(0.6, sf)),
-            }}
-        >
-            <div style={{ fontFamily: "monospace", fontSize: fs, fontWeight: 900, color: "white", lineHeight: 1, margin: 0 }}>
-                {countdown}
-            </div>
-
-            <div style={{ position: "relative", width: lw, height: lh, flexShrink: 0 }}>
-                <img
-                    src={`${ASSET_BASE}/logo.svg`}
-                    alt=""
-                    draggable={false}
-                    style={{ position: "absolute", inset: 0, width: lw, height: lh, opacity: 0.18, display: "block" }}
-                />
-                <img
-                    key={fillKey}
-                    src={`${ASSET_BASE}/logo.svg`}
-                    alt=""
-                    draggable={false}
-                    style={{ position: "absolute", inset: 0, width: lw, height: lh, display: "block", animation: `gf-fill-progress ${COUNTDOWN_SECONDS}s linear forwards` }}
-                />
-            </div>
-
-            <p style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,1)", letterSpacing: "0.22em", textTransform: "uppercase", margin: 0 }}>
-                Preparing launch
-            </p>
-        </div>
-    );
-}
-
 // ─── Multiplier overlay ───────────────────────────────────────────────────────
 function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElement {
-    const { phase, multiplier, cashedOutAt, revealedCrashPoint } = round;
+    const { multiplier, cashedOutAt } = round;
 
     const color = useMemo(() => {
-        if (phase === "crashed") return "text-white/80";
         if (multiplier < 2) return "text-[#00FF94]";
         if (multiplier < 5) return "text-yellow-300";
         return "text-orange-400";
-    }, [multiplier, phase]);
+    }, [multiplier]);
 
     const glow = useMemo(() => {
-        if (phase === "crashed") return "drop-shadow-[0_0_20px_rgba(255,255,255,0.25)]";
         if (multiplier < 2) return "drop-shadow-[0_0_20px_rgba(0,255,148,0.75)]";
         if (multiplier < 5) return "drop-shadow-[0_0_28px_rgba(255,240,0,0.7)]";
         return "drop-shadow-[0_0_36px_rgba(255,150,0,0.85)]";
-    }, [multiplier, phase]);
+    }, [multiplier]);
 
     const hasCashedOut = cashedOutAt !== null && cashedOutAt > 0;
 
@@ -211,7 +166,7 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
                 className="flex flex-col items-center gap-1"
             >
                 <div className={`text-4xl sm:text-6xl md:text-7xl font-black font-mono transition-all duration-75 ${color} ${glow}`}>
-                    {phase === "crashed" ? "CRASHED" : `${multiplier.toFixed(2)}x`}
+                    {multiplier.toFixed(2)}x
                 </div>
 
                 {hasCashedOut && (
@@ -224,14 +179,6 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
                     >
                         <span className="text-xl sm:text-2xl font-black text-[#00FF94] drop-shadow-[0_0_18px_rgba(0,255,148,0.85)]">
                             APED OUT {cashedOutAt.toFixed(2)}x
-                        </span>
-                    </motion.div>
-                )}
-
-                {revealedCrashPoint !== null && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-                        <span className="text-[10px] sm:text-xs text-white/45 font-mono uppercase tracking-[0.25em]">
-                            Round crashed at {revealedCrashPoint.toFixed(2)}x
                         </span>
                     </motion.div>
                 )}
@@ -248,10 +195,9 @@ interface MyGameWindowProps {
 
 // ─── Main scene ───────────────────────────────────────────────────────────────
 const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
-    const { phase, countdown, multiplier, cashedOutAt } = round;
+    const { phase, multiplier, cashedOutAt, revealedCrashPoint } = round;
 
     const [enterKey, setEnterKey] = useState<number>(0);
-    const [fillKey, setFillKey] = useState<number>(0);
     const [boomKey, setBoomKey] = useState<number>(0);
     const [cloudsVisible, setCloudsVisible] = useState<boolean>(false);
     const [showGraphic, setShowGraphic] = useState<boolean>(false);
@@ -304,9 +250,6 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
     const [renderedPhase, setRenderedPhase] = useState<FlightRound["phase"]>(phase);
     if (renderedPhase !== phase) {
         setRenderedPhase(phase);
-        if (phase === "countdown") {
-            setFillKey((k) => k + 1);
-        }
         if (phase === "running") {
             setEnterKey((k) => k + 1);
             setCloudsVisible(true);
@@ -334,11 +277,8 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
         const prev = prevPhase.current;
         prevPhase.current = phase;
 
-        if (prev !== "countdown" && phase === "countdown") {
-            hasFiredCashoutAnim.current = false;
-        }
-
         if (prev !== "running" && phase === "running") {
+            hasFiredCashoutAnim.current = false;
             if (!sfxMutedRef.current) {
                 if (!windAudioRef.current) {
                     windAudioRef.current = new Audio(`${ASSET_BASE}/sfx/wind.mp3`);
@@ -422,8 +362,11 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
 
     const intensity = phase === "running" ? glitchIntensity(multiplier) : 0;
     const graphicColor = phase === "crashed" ? "#f87171" : multiplierColor(multiplier);
-    const showLand = phase === "idle" || phase === "countdown";
+    const showLand = phase === "idle";
     const flying = phase === "running" && cashedOutAt === null;
+    // Once the round is over the platform UI (results modal / setup card)
+    // takes over — the in-scene multiplier overlay disappears.
+    const roundOver = revealedCrashPoint !== null;
 
     const glitchContent = (
         <div className="absolute inset-0 overflow-hidden" style={{ background: "#060b14" }}>
@@ -747,24 +690,9 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 </div>
             )}
 
-            {/* ── Countdown preloader ── */}
-            <AnimatePresence>
-                {phase === "countdown" && (
-                    <motion.div
-                        key="preloader"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        style={{ position: "absolute", inset: 0, zIndex: 100, pointerEvents: "none" }}
-                    >
-                        <LogoCountdown fillKey={fillKey} countdown={countdown} sf={sf} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── Multiplier / status overlay ── */}
-            {phase !== "idle" && phase !== "countdown" && <MultiplierOverlay round={round} />}
+            {/* ── Live multiplier overlay — flight only; the crash is announced by
+                 the animated CRASHED artwork and results live in the platform UI ── */}
+            {phase === "running" && !roundOver && <MultiplierOverlay round={round} />}
         </div>
     );
 };

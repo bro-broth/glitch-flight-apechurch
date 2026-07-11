@@ -62,9 +62,6 @@ const CAP_TIER_3_PCT = 92;
  */
 export const GROWTH_RATE = 0.00014;
 
-/** Countdown (seconds) before the droid launches. */
-export const COUNTDOWN_SECONDS = 3;
-
 /** Multiplier value at flight time `elapsedMs`. */
 export function multiplierAt(elapsedMs: number): number {
     return parseFloat(Math.exp(elapsedMs * GROWTH_RATE).toFixed(2));
@@ -101,13 +98,11 @@ export function computeCrashPoint(randomWord: Hex): number {
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
 /** Visual phase of the flight scene. */
-export type FlightPhase = "idle" | "countdown" | "running" | "crashed";
+export type FlightPhase = "idle" | "running" | "crashed";
 
 /** Everything the window needs to render one frame of the round. */
 export interface FlightRound {
     phase: FlightPhase;
-    /** Seconds left before launch (only meaningful during countdown). */
-    countdown: number;
     /** Live multiplier while running; final value after crash. */
     multiplier: number;
     /** Multiplier the player locked in, or null if they never cashed out. */
@@ -118,7 +113,6 @@ export interface FlightRound {
 
 export const INITIAL_ROUND: FlightRound = {
     phase: "idle",
-    countdown: COUNTDOWN_SECONDS,
     multiplier: 1.0,
     cashedOutAt: null,
     revealedCrashPoint: null,
