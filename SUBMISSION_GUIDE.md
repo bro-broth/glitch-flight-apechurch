@@ -6,9 +6,9 @@
 
 ```
 components/glitch-flight/      ← вся игра (6 файлов)
-  MyGame.tsx                   ← лайфсайкл: playGame / handleReset / handlePlayAgain / handleRewatch / handleCashOut
-  MyGameWindow.tsx             ← сцена полёта (облака, койны, дроид, глитч, краш)
-  MyGameSetupCard.tsx          ← панель: ставка, Auto Ape Out (целевой X), APE OUT, результаты
+  MyGame.tsx                   ← лайфсайкл: playGame / handleReset / handlePlayAgain / handleRewatch
+  MyGameWindow.tsx             ← сцена полёта (заставка, облака, койны, дроид, глитч, краш)
+  MyGameSetupCard.tsx          ← панель: ставка, Flight Target (строка + пресеты 2x–200x), результаты
   MyGameResultsModal.tsx       ← своё окно результатов в стиле apedroidz
   myGameConfig.ts              ← конфиг + provably-fair формула crash point (порт с вашего game-server)
   glitch-flight.styles.css     ← анимации
@@ -17,7 +17,7 @@ public/glitch-flight/          ← ассеты, всего ~5.1MB (лимит 1
 metadata.json                  ← заявка
 ```
 
-Механика (Limbo-стиль, полностью он-чейн, без промежуточных решений): игрок задаёт ставку и **целевой множитель** (Flight Target, 1.01–65.51) → он-чейн random word детерминированно задаёт crash point → дроид летит; если crash point выше цели — дроид долетает и выплата = bet × target, иначе краш и 0. Исход полностью определён параметрами транзакции и случайным числом сети — ровно как требует документация («the chain gives your game a random number, your game turns that into an outcome»). Rewatch воспроизводит раунд из тех же данных без новой транзакции. Окно результатов — собственное (`MyGameResultsModal.tsx`, стиль apedroidz): встроенная платформенная модалка отключена легально — `onPlayAgain` в `GameWindow` опционален, shared-файлы не тронуты. В верху панели — логотип ApeDroidz (`brand.svg`).
+Механика (Limbo-стиль, полностью он-чейн, без промежуточных решений): игрок задаёт ставку и **целевой множитель** (Flight Target, 1.01–200, пресеты 2x–200x) → он-чейн random word детерминированно задаёт crash point → дроид летит; если crash point выше цели — дроид долетает и выплата = bet × target, иначе краш и 0. Исход полностью определён параметрами транзакции и случайным числом сети — ровно как требует документация («the chain gives your game a random number, your game turns that into an outcome»). Rewatch воспроизводит раунд из тех же данных без новой транзакции. Окно результатов — собственное (`MyGameResultsModal.tsx`, стиль apedroidz): встроенная платформенная модалка отключена легально — `onPlayAgain` в `GameWindow` опционален, shared-файлы не тронуты. В верху панели — логотип ApeDroidz (`brand.svg`).
 
 ## ⚠️ Перед подачей ОБЯЗАТЕЛЬНО заполнить
 

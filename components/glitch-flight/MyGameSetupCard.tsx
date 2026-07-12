@@ -36,8 +36,8 @@ interface MyGameSetupCardProps {
     setTargetMultiplier: (value: number) => void;
 }
 
-/** Two rows of six presets, all within the reachable crash range. */
-const TARGET_PRESETS: number[] = [1.2, 1.5, 2, 3, 5, 7.5, 10, 15, 20, 30, 50, 65];
+/** Two rows of six presets, spread from 2x to 200x. */
+const TARGET_PRESETS: number[] = [2, 3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 200];
 
 function StatRow({ label, value, valueClass = "text-white" }: { label: string; value: string; valueClass?: string }): React.ReactElement {
     return (
@@ -167,7 +167,6 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                         <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass="text-[#00FF94]" />
                         <StatRow label="Potential Payout" value={formatApe(targetWin)} valueClass="text-[#00FF94]" />
                         <StatRow label="Max Bet Per Flight" value={`${maxBet.toLocaleString([], { maximumFractionDigits: 0 })} APE`} />
-                        <StatRow label="Wallet Balance" value={formatApe(walletBalance)} />
                     </div>
 
                     <button
@@ -231,7 +230,6 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                         {round.revealedCrashPoint !== null && (
                             <StatRow label="Crash Point" value={`${round.revealedCrashPoint.toFixed(2)}x`} />
                         )}
-                        <StatRow label="Wallet Balance" value={formatApe(walletBalance)} />
                     </div>
 
                     <div className="grow" />

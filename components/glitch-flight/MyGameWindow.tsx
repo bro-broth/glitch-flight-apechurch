@@ -238,6 +238,28 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
     const sf = Math.min(1, canvasW / 800);
     const droidW = Math.round(281 * Math.max(0.45, sf));
     const boomW = Math.round(468 * Math.max(0.45, sf));
+    const splashW = Math.round(200 * Math.max(0.55, sf));
+
+    // ── Splash fill — tied to the actual bet-transaction state: creeps up
+    //    asymptotically while pending, completes the instant it confirms.
+    const [loadProgress, setLoadProgress] = useState<number>(1);
+    const [renderedLoading, setRenderedLoading] = useState<boolean>(isLoading);
+    if (renderedLoading !== isLoading) {
+        setRenderedLoading(isLoading);
+        setLoadProgress(isLoading ? 0 : 1);
+    }
+
+    useEffect(() => {
+        if (!isLoading) return;
+        const start = performance.now();
+        let raf: number;
+        const step = (now: number): void => {
+            setLoadProgress(Math.min(0.95, 1 - Math.exp(-(now - start) / 500)));
+            raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [isLoading]);
 
     const playSfx = (file: string, volume: number): void => {
         if (sfxMutedRef.current) return;
@@ -659,12 +681,12 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                 </div>
             )}
 
-            {/* ── Idle splash — the site's pre-round screen: the droid logo fully
-                 filled (no progress animation) with the launch caption under it.
-                 Held for the whole idle state. The group is raised above center
-                 and sits above the loading backdrop (z-40 vs z-30), so the
-                 platform's "Loading..." label appears below it while the bet
-                 transaction is pending. ── */}
+            {/* ── Idle splash — the site's pre-round screen, centered: the droid
+                 silhouette with the game title under it. While the bet
+                 transaction is pending, the silhouette fills up with the real
+                 loading progress (asymptotic while pending, completes on
+                 confirmation) and a dark backdrop covers the platform's
+                 "Loading..." label underneath (z-40 vs z-30). ── */}
             {phase === "idle" && (
                 <div
                     style={{
@@ -677,40 +699,59 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                         justifyContent: "center",
                     }}
                 >
+                    {isLoading && (
+                        <div style={{ position: "absolute", inset: 0, background: "rgba(6,9,16,0.97)" }} />
+                    )}
                     <div
                         style={{
+                            position: "relative",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: Math.round(16 * Math.max(0.6, sf)),
-                            transform: `translateY(-${Math.round(106 * Math.max(0.7, sf))}px)`,
+                            gap: Math.round(22 * Math.max(0.6, sf)),
                         }}
                     >
-                        <img
-                            src={`${ASSET_BASE}/logo.svg`}
-                            alt="Glitch Flight"
-                            draggable={false}
+                        <div
                             style={{
-                                width: Math.round(112 * Math.max(0.55, sf)),
-                                display: "block",
+                                position: "relative",
+                                width: splashW,
+                                height: Math.round((splashW * 151) / 144),
                             }}
-                        />
-                        {/* While loading, the platform's "Loading..." takes this spot. */}
-                        {!isLoading && (
-                            <p
-                                className="gf-mono"
+                        >
+                            <img
+                                src={`${ASSET_BASE}/logo.svg`}
+                                alt=""
+                                draggable={false}
+                                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.18, display: "block" }}
+                            />
+                            <img
+                                src={`${ASSET_BASE}/logo.svg`}
+                                alt="Glitch Flight"
+                                draggable={false}
                                 style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: "rgba(255,255,255,1)",
-                                    letterSpacing: "0.22em",
-                                    textTransform: "uppercase",
-                                    margin: 0,
+                                    position: "absolute",
+                                    inset: 0,
+                                    width: "100%",
+                                    height: "100%",
+                                    display: "block",
+                                    clipPath: `inset(0 ${Math.max(0, 100 - loadProgress * 100)}% 0 0)`,
                                 }}
-                            >
-                                Preparing launch
-                            </p>
-                        )}
+                            />
+                        </div>
+                        <p
+                            className="gf-mono"
+                            style={{
+                                fontSize: Math.round(15 * Math.max(0.7, sf)),
+                                fontWeight: 800,
+                                color: "rgba(255,255,255,0.95)",
+                                letterSpacing: "0.3em",
+                                textTransform: "uppercase",
+                                margin: 0,
+                                textShadow: "0 0 14px rgba(255,255,255,0.35)",
+                            }}
+                        >
+                            Glitch Flight
+                        </p>
                     </div>
                 </div>
             )}

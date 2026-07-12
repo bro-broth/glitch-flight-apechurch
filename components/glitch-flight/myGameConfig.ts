@@ -40,11 +40,10 @@ export const MAX_BET = 100;
  * Bounds for the flight target multiplier — the only bet parameter besides
  * the wager. The round is resolved fully on-chain: the droid reaches the
  * target (payout = bet x target) or crashes first (payout = 0x). The ceiling
- * matches the highest possible crash point (CAP_TIER_3) — a target above it
- * can never win.
+ * stays below CRASH_CAP so every selectable target is winnable.
  */
 export const TARGET_MIN = 1.01;
-export const TARGET_MAX = 65.51;
+export const TARGET_MAX = 200;
 export const TARGET_DEFAULT = 2.0;
 
 export function clampTarget(value: number): number {
@@ -61,16 +60,11 @@ export function clampTarget(value: number): number {
 export const HOUSE_EDGE = 0.05;
 
 /**
- * Multi-tier crash-point cap — prevents extreme outliers while keeping the
- * top end varied. When the raw crash point exceeds CAP_TIER_1, a second,
- * independent slice of the random word picks the effective ceiling:
- * 70% → CAP_TIER_1, 22% → CAP_TIER_2, 8% → CAP_TIER_3.
+ * Hard ceiling for the crash point — protects the house pool from extreme
+ * heavy-tail outliers. Protocol-configured at integration time; must stay
+ * above TARGET_MAX so the whole preset range remains winnable.
  */
-export const CAP_TIER_1 = 47.4;
-export const CAP_TIER_2 = 56.2;
-export const CAP_TIER_3 = 65.51;
-const CAP_TIER_2_PCT = 70;
-const CAP_TIER_3_PCT = 92;
+export const CRASH_CAP = 500;
 
 /**
  * Exponential multiplier growth rate (per millisecond of flight time):
@@ -101,14 +95,7 @@ export function computeCrashPoint(randomWord: Hex): number {
     if (h % Math.round(1 / HOUSE_EDGE) === 0) return 1.0;
 
     const raw = Math.floor((100 * e - h) / (e - h)) / 100;
-    const base = Math.max(1.0, raw);
-
-    if (base <= CAP_TIER_1) return base;
-
-    const capRoll = parseInt(randomWord.slice(10, 18), 16) % 100;
-    if (capRoll < CAP_TIER_2_PCT) return CAP_TIER_1;
-    if (capRoll < CAP_TIER_3_PCT) return CAP_TIER_2;
-    return CAP_TIER_3;
+    return Math.min(CRASH_CAP, Math.max(1.0, raw));
 }
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
