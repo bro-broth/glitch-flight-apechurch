@@ -309,7 +309,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                     windAudioRef.current = new Audio(`${ASSET_BASE}/sfx/wind.mp3`);
                     windAudioRef.current.loop = true;
                 }
-                windAudioRef.current.volume = 0.7;
+                windAudioRef.current.volume = 0.85;
                 windAudioRef.current.currentTime = 0;
                 windAudioRef.current.play().catch(() => {});
             }
@@ -320,12 +320,10 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
         if (prev !== "crashed" && phase === "crashed") {
             windAudioRef.current?.pause();
             playSfx("boom.mp3", 0.6);
+            playSfx("glitch.mp3", 0.4);
             const t1 = window.setTimeout(() => setShowGraphic(false), 200);
             const t2 = window.setTimeout(() => setShowCrashText(true), 400);
-            const t3 = window.setTimeout(() => {
-                setCrashTextExit(true);
-                playSfx("glitch.mp3", 0.45);
-            }, 2000);
+            const t3 = window.setTimeout(() => setCrashTextExit(true), 2000);
             const t4 = window.setTimeout(() => setShowCrashText(false), 2500);
             return () => {
                 window.clearTimeout(t1);
@@ -757,20 +755,40 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                                 }}
                             />
                         </div>
-                        <p
-                            className="gf-mono"
-                            style={{
-                                fontSize: Math.round(15 * Math.max(0.7, sf)),
-                                fontWeight: 800,
-                                color: "rgba(255,255,255,0.95)",
-                                letterSpacing: "0.3em",
-                                textTransform: "uppercase",
-                                margin: 0,
-                                textShadow: "0 0 14px rgba(255,255,255,0.35)",
-                            }}
-                        >
-                            Glitch Flight
-                        </p>
+                        {isLoading ? (
+                            <p
+                                className="gf-mono"
+                                style={{
+                                    fontSize: Math.round(12 * Math.max(0.7, sf)),
+                                    fontWeight: 700,
+                                    color: "rgba(255,255,255,0.85)",
+                                    letterSpacing: "0.3em",
+                                    textTransform: "uppercase",
+                                    margin: 0,
+                                }}
+                            >
+                                Loading
+                            </p>
+                        ) : (
+                            <p
+                                className="gf-mono"
+                                style={{
+                                    fontSize: Math.round(40 * Math.max(0.55, sf)),
+                                    lineHeight: 1.08,
+                                    fontWeight: 800,
+                                    color: "#ffffff",
+                                    letterSpacing: "0.12em",
+                                    textTransform: "uppercase",
+                                    textAlign: "center",
+                                    margin: 0,
+                                    textShadow: "0 0 18px rgba(255,255,255,0.55), 0 0 42px rgba(0,255,148,0.35)",
+                                }}
+                            >
+                                Glitch
+                                <br />
+                                Flight
+                            </p>
+                        )}
                     </div>
                 </div>
             )}

@@ -10,6 +10,19 @@
     font-family: "GF JetBrains Mono", "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* The shared BetAmountInput ships with a `no-spinner` class the template
+   never defines — hide the native number-input arrows so the bet field
+   matches the styled slider + preset controls. */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.no-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
 /* Glitch Flight — game-scoped animations and glitch layers. */
 @keyframes gf-cloud-slide {
     from { transform: translate(0px, 0px) rotate(-24deg); }

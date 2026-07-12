@@ -188,7 +188,7 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                     <div className="mt-2 flex flex-col items-center gap-1">
                         <p className="text-sm font-medium text-gray-400">Current Multiplier</p>
                         <p
-                            className="gf-mono text-5xl font-black text-[#00FF94] drop-shadow-[0_0_22px_rgba(0,255,148,0.45)]"
+                            className="gf-mono text-5xl font-black"
                             style={{ color: liveColor }}
                         >
                             {round.multiplier.toFixed(2)}x
