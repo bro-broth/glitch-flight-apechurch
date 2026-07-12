@@ -4,7 +4,7 @@ import { Hex } from "viem";
 /**
  * Layout mode for this game.
  * Glitch Flight uses the classic two-column crash layout:
- * flight scene on the left, bet / cash-out panel on the right.
+ * flight scene on the left, bet panel on the right.
  */
 export type GameLayout = "two-column" | "full-size";
 
@@ -16,7 +16,7 @@ export const ASSET_BASE = "/glitch-flight";
 export const myGame: Game = {
     title: "Glitch Flight",
     description:
-        "The glitch droid takes off and the multiplier climbs. Cash out before the crash to win — hold too long and you lose everything.",
+        "Pick a target multiplier and launch the glitch droid. Reach the target before the crash and win bet x target — crash first and the bet is gone.",
     gameAddress: "0x1234567890123456789012345678901234567890",
     gameBackground: `${ASSET_BASE}/bg.webp`,
     card: `${ASSET_BASE}/card.png`,
@@ -24,8 +24,8 @@ export const myGame: Game = {
     themeColorBackground: "#3b82f6",
     song: `${ASSET_BASE}/audio/song.mp3`,
     // Crash games do not use a combinatorial payout table — the payout
-    // multiplier is the live multiplier locked at the moment of cash-out
-    // (or 0x on crash). Kept minimal to satisfy the Game type.
+    // multiplier is the pre-selected flight target (or 0x on a crash).
+    // Kept minimal to satisfy the Game type.
     payouts: {
         0: { 0: { 0: 0 } },
     },
@@ -37,16 +37,19 @@ export const MIN_BET = 1;
 export const MAX_BET = 100;
 
 /**
- * Bounds for the pre-round auto ape-out target. The ceiling matches the
- * highest possible crash point (CAP_TIER_3) — a target above it can never win.
+ * Bounds for the flight target multiplier — the only bet parameter besides
+ * the wager. The round is resolved fully on-chain: the droid reaches the
+ * target (payout = bet x target) or crashes first (payout = 0x). The ceiling
+ * matches the highest possible crash point (CAP_TIER_3) — a target above it
+ * can never win.
  */
-export const AUTO_CASHOUT_MIN = 1.01;
-export const AUTO_CASHOUT_MAX = 65.51;
-export const AUTO_CASHOUT_DEFAULT = 2.0;
+export const TARGET_MIN = 1.01;
+export const TARGET_MAX = 65.51;
+export const TARGET_DEFAULT = 2.0;
 
-export function clampAutoCashout(value: number): number {
-    if (!Number.isFinite(value)) return AUTO_CASHOUT_DEFAULT;
-    return parseFloat(Math.min(AUTO_CASHOUT_MAX, Math.max(AUTO_CASHOUT_MIN, value)).toFixed(2));
+export function clampTarget(value: number): number {
+    if (!Number.isFinite(value)) return TARGET_DEFAULT;
+    return parseFloat(Math.min(TARGET_MAX, Math.max(TARGET_MIN, value)).toFixed(2));
 }
 
 // ─── Crash math ───────────────────────────────────────────────────────────────
@@ -118,8 +121,8 @@ export interface FlightRound {
     phase: FlightPhase;
     /** Live multiplier while running; final value after crash. */
     multiplier: number;
-    /** Multiplier the player locked in, or null if they never cashed out. */
-    cashedOutAt: number | null;
+    /** Target multiplier once the droid has reached it, or null before/never. */
+    targetHitAt: number | null;
     /** Crash point revealed once the round is over (null while hidden). */
     revealedCrashPoint: number | null;
 }
@@ -127,6 +130,6 @@ export interface FlightRound {
 export const INITIAL_ROUND: FlightRound = {
     phase: "idle",
     multiplier: 1.0,
-    cashedOutAt: null,
+    targetHitAt: null,
     revealedCrashPoint: null,
 };

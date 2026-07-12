@@ -139,7 +139,7 @@ function GraphicSVG({ color }: { color: string }): React.ReactElement {
 
 // ─── Multiplier overlay ───────────────────────────────────────────────────────
 function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElement {
-    const { multiplier, cashedOutAt } = round;
+    const { multiplier, targetHitAt } = round;
 
     const color = useMemo(() => {
         if (multiplier < 2) return "text-[#00FF94]";
@@ -153,7 +153,7 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
         return "drop-shadow-[0_0_36px_rgba(255,150,0,0.85)]";
     }, [multiplier]);
 
-    const hasCashedOut = cashedOutAt !== null && cashedOutAt > 0;
+    const hasHitTarget = targetHitAt !== null && targetHitAt > 0;
 
     return (
         <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-start pt-5 z-30">
@@ -167,16 +167,16 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
                     {multiplier.toFixed(2)}x
                 </div>
 
-                {hasCashedOut && (
+                {hasHitTarget && (
                     <motion.div
-                        key="cashedOut"
+                        key="targetHit"
                         initial={{ opacity: 0, y: 8, scale: 0.8 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ type: "spring", damping: 14, stiffness: 260 }}
                         className="flex flex-col items-center gap-0.5 mt-1"
                     >
                         <span className="text-xl sm:text-2xl font-black text-[#00FF94] drop-shadow-[0_0_18px_rgba(0,255,148,0.85)]">
-                            APED OUT {cashedOutAt.toFixed(2)}x
+                            TARGET HIT {targetHitAt.toFixed(2)}x
                         </span>
                     </motion.div>
                 )}
@@ -193,7 +193,7 @@ interface MyGameWindowProps {
 
 // ─── Main scene ───────────────────────────────────────────────────────────────
 const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
-    const { phase, multiplier, cashedOutAt, revealedCrashPoint } = round;
+    const { phase, multiplier, targetHitAt, revealedCrashPoint } = round;
 
     const [enterKey, setEnterKey] = useState<number>(0);
     const [boomKey, setBoomKey] = useState<number>(0);
@@ -209,7 +209,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
     const [canvasW, setCanvasW] = useState<number>(800);
 
     const prevPhase = useRef<FlightRound["phase"]>(phase);
-    const hasFiredCashoutAnim = useRef<boolean>(false);
+    const hasFiredTargetAnim = useRef<boolean>(false);
     const cloudContainerRef = useRef<HTMLDivElement>(null);
     const coinContainerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -276,7 +276,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
         prevPhase.current = phase;
 
         if (prev !== "running" && phase === "running") {
-            hasFiredCashoutAnim.current = false;
+            hasFiredTargetAnim.current = false;
             if (!sfxMutedRef.current) {
                 if (!windAudioRef.current) {
                     windAudioRef.current = new Audio(`${ASSET_BASE}/sfx/wind.mp3`);
@@ -307,7 +307,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
 
         if (phase === "idle") {
             windAudioRef.current?.pause();
-            hasFiredCashoutAnim.current = false;
+            hasFiredTargetAnim.current = false;
         }
     }, [phase]);
 
@@ -332,11 +332,11 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
         });
     }, [multiplier, phase]);
 
-    // ── Coin burst + blue flash on cash-out — fires once per round ──
-    const [renderedCashout, setRenderedCashout] = useState<number | null>(cashedOutAt);
-    if (renderedCashout !== cashedOutAt) {
-        setRenderedCashout(cashedOutAt);
-        if (cashedOutAt !== null) {
+    // ── Coin burst + blue flash when the target is reached — fires once per round ──
+    const [renderedTargetHit, setRenderedTargetHit] = useState<number | null>(targetHitAt);
+    if (renderedTargetHit !== targetHitAt) {
+        setRenderedTargetHit(targetHitAt);
+        if (targetHitAt !== null) {
             setCoinBurstKey((k) => k + 1);
             setShowCoinBurst(true);
             setFlashKey((k) => k + 1);
@@ -345,8 +345,8 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
     }
 
     useEffect(() => {
-        if (cashedOutAt !== null && !hasFiredCashoutAnim.current) {
-            hasFiredCashoutAnim.current = true;
+        if (targetHitAt !== null && !hasFiredTargetAnim.current) {
+            hasFiredTargetAnim.current = true;
             playSfx("win.mp3", 0.5);
             windAudioRef.current?.pause();
             const t1 = window.setTimeout(() => setShowCoinBurst(false), 2200);
@@ -356,12 +356,12 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 window.clearTimeout(t2);
             };
         }
-    }, [cashedOutAt]);
+    }, [targetHitAt]);
 
     const intensity = phase === "running" ? glitchIntensity(multiplier) : 0;
     const graphicColor = phase === "crashed" ? "#f87171" : multiplierColor(multiplier);
     const showLand = phase === "idle";
-    const flying = phase === "running" && cashedOutAt === null;
+    const flying = phase === "running" && targetHitAt === null;
     // Once the round is over the platform UI (results modal / setup card)
     // takes over — the in-scene multiplier overlay disappears.
     const roundOver = revealedCrashPoint !== null;
@@ -442,8 +442,9 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
             )}
 
             {/* ── Trajectory graphic — its top-right tip is glued to the droid's
-                 flame: the droid is centered at (50%, 50%), so the tip sits at
-                 the horizontal center, slightly above the vertical center.
+                 flame: the droid is centered at (50%, 50%) and rides on top of
+                 the curve, so the tip sits at the horizontal center, just under
+                 the board (~0.38 droid-widths below the vertical center).
                  Entrance mirrors the droid's motion exactly so they fly in as
                  one unit. ── */}
             <AnimatePresence>
@@ -458,7 +459,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                             position: "absolute",
                             width: "62%",
                             right: "50%",
-                            top: `calc(50% - ${Math.round(droidW * 0.1)}px)`,
+                            top: `calc(50% + ${Math.round(droidW * 0.38)}px)`,
                             zIndex: 2,
                             pointerEvents: "none",
                         }}
@@ -553,7 +554,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 )}
             </AnimatePresence>
 
-            {/* ── Blue flash on cash-out ── */}
+            {/* ── Blue flash on target hit ── */}
             {showFlash && (
                 <div
                     key={`flash-${flashKey}`}
@@ -563,12 +564,12 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                         zIndex: 50,
                         pointerEvents: "none",
                         background: "radial-gradient(ellipse at center, rgba(0,180,255,0.7) 0%, rgba(0,100,200,0.45) 50%, transparent 80%)",
-                        animation: "gf-cashout-flash 0.7s ease-out forwards",
+                        animation: "gf-target-flash 0.7s ease-out forwards",
                     }}
                 />
             )}
 
-            {/* ── Coin burst on cash-out ── */}
+            {/* ── Coin burst on target hit ── */}
             {showCoinBurst && (
                 <div
                     key={`burst-${coinBurstKey}`}

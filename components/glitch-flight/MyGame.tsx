@@ -6,6 +6,7 @@ import { randomBytes, Game } from "@/lib/games";
 import GameWindow from "@/components/shared/GameWindow";
 import MyGameWindow from "./MyGameWindow";
 import MyGameSetupCard from "./MyGameSetupCard";
+import MyGameResultsModal from "./MyGameResultsModal";
 import {
     myGame,
     computeCrashPoint,
@@ -14,9 +15,9 @@ import {
     FlightRound,
     MIN_BET,
     MAX_BET,
-    AUTO_CASHOUT_DEFAULT,
+    TARGET_DEFAULT,
+    clampTarget,
 } from "./myGameConfig";
-import MyGameResultsModal from "./MyGameResultsModal";
 import { bytesToHex, Hex } from "viem";
 import { toast } from "sonner";
 import "./glitch-flight.styles.css";
@@ -29,7 +30,7 @@ interface MyGameComponentProps {
 /** Outcome of the last completed round, kept for rewatch. */
 interface RoundRecord {
     crashPoint: number;
-    cashedOutAt: number | null;
+    target: number;
     betAmount: number;
     payout: number;
 }
@@ -49,22 +50,18 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     const [gameOver, setGameOver] = useState<boolean>(false);
     const [round, setRound] = useState<FlightRound>(INITIAL_ROUND);
     const [sfxMuted, setSfxMuted] = useState<boolean>(false);
-    // Pre-round target multiplier: the droid apes out automatically when the
-    // multiplier reaches it. null = manual-only mode.
-    const [autoCashOutAt, setAutoCashOutAt] = useState<number | null>(AUTO_CASHOUT_DEFAULT);
-    const autoCashOutRef = useRef<number | null>(autoCashOutAt);
-    useEffect(() => {
-        autoCashOutRef.current = autoCashOutAt;
-    }, [autoCashOutAt]);
+    // The single bet parameter besides the wager: the flight target multiplier.
+    // The whole round is resolved on-chain from (bet, target, random word) —
+    // there are no mid-flight decisions.
+    const [targetMultiplier, setTargetMultiplier] = useState<number>(TARGET_DEFAULT);
 
     // ── Timers ── all animation timers live here so handleReset can kill them.
     const rafRef = useRef<number | null>(null);
     const timeoutsRef = useRef<number[]>([]);
 
     // ── Round bookkeeping ──
-    const crashPointRef = useRef<number>(0);
-    const cashedOutRef = useRef<number | null>(null);
     const activeBetRef = useRef<number>(0);
+    const activeTargetRef = useRef<number>(TARGET_DEFAULT);
     const lastRoundRef = useRef<RoundRecord | null>(null);
 
     const [currentGameId, setCurrentGameId] = useState<bigint>(
@@ -103,7 +100,7 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
         (finalPayout: number, crashPoint: number, delayMs: number): void => {
             lastRoundRef.current = {
                 crashPoint,
-                cashedOutAt: cashedOutRef.current,
+                target: activeTargetRef.current,
                 betAmount: activeBetRef.current,
                 payout: finalPayout,
             };
@@ -119,15 +116,16 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     );
 
     /**
-     * Runs one flight: immediate take-off → exponential climb → crash (or
-     * until the player apes out, manually or at the pre-set target).
-     * `replayCashOutAt` reproduces a recorded cash-out during rewatch.
+     * Animates one fully-determined flight: the outcome is already fixed by
+     * (crash point, target) — the droid either reaches the target (payout =
+     * bet x target) or crashes first (payout = 0). Used for live rounds and
+     * rewatch alike since both replay the same on-chain data.
      */
     const startFlight = useCallback(
-        (crashPoint: number, replayCashOutAt: number | null, rewatchPayout: number | null): void => {
-            crashPointRef.current = crashPoint;
-            cashedOutRef.current = null;
-            const isRewatch = rewatchPayout !== null;
+        (crashPoint: number, target: number, roundBet: number): void => {
+            activeTargetRef.current = target;
+            activeBetRef.current = roundBet;
+            const willHitTarget = target < crashPoint;
 
             const takeoff = performance.now();
             setRound({ ...INITIAL_ROUND, phase: "running", multiplier: 1.0 });
@@ -135,42 +133,17 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
             const tick = (now: number): void => {
                 const m = multiplierAt(now - takeoff);
 
-                // Rewatch: reproduce the recorded cash-out at the same multiplier.
-                if (
-                    replayCashOutAt !== null &&
-                    cashedOutRef.current === null &&
-                    m >= replayCashOutAt
-                ) {
-                    cashedOutRef.current = replayCashOutAt;
-                    setRound((r) => ({ ...r, multiplier: replayCashOutAt, cashedOutAt: replayCashOutAt }));
-                    finishRound(rewatchPayout ?? 0, crashPoint, 1800);
-                    return;
-                }
-
-                // Live round: the pre-set target fires before the crash check so a
-                // frame that jumps past both still pays the legitimately lower target.
-                const target = autoCashOutRef.current;
-                if (
-                    !isRewatch &&
-                    target !== null &&
-                    cashedOutRef.current === null &&
-                    m >= target &&
-                    target < crashPoint
-                ) {
-                    cashedOutRef.current = target;
-                    setRound((r) => ({ ...r, multiplier: target, cashedOutAt: target }));
-                    finishRound(activeBetRef.current * target, crashPoint, 1800);
+                // Target check runs before the crash check so a frame that jumps
+                // past both still lands on the legitimately lower target.
+                if (willHitTarget && m >= target) {
+                    setRound((r) => ({ ...r, multiplier: target, targetHitAt: target }));
+                    finishRound(roundBet * target, crashPoint, 1800);
                     return;
                 }
 
                 if (m >= crashPoint) {
-                    setRound((r) => ({
-                        ...r,
-                        phase: "crashed",
-                        multiplier: crashPoint,
-                    }));
-                    const lostPayout = cashedOutRef.current === null ? 0 : rewatchPayout ?? 0;
-                    finishRound(lostPayout, crashPoint, 2000);
+                    setRound((r) => ({ ...r, phase: "crashed", multiplier: crashPoint }));
+                    finishRound(0, crashPoint, 2000);
                     return;
                 }
 
@@ -193,6 +166,7 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
             toast.error("Insufficient balance.");
             return;
         }
+        const target = clampTarget(targetMultiplier);
 
         setIsLoading(true);
         setIsGameOngoing(true);
@@ -202,19 +176,25 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
 
         try {
             // Mock on-chain transaction — replaced by the platform at integration.
-            console.log("playGame: mock tx", { gameId: gameIdToUse.toString(16), randomWord: randomWordToUse });
+            // The bet amount and target multiplier are the wager parameters; the
+            // chain's random word resolves the round.
+            console.log("playGame: mock tx", {
+                gameId: gameIdToUse.toString(16),
+                randomWord: randomWordToUse,
+                betAmount,
+                target,
+            });
             const receiptSuccess = true;
 
             if (receiptSuccess) {
                 // The random word fully determines this round's crash point.
                 const crashPoint = computeCrashPoint(randomWordToUse);
-                activeBetRef.current = betAmount;
 
                 toast.success("Transaction complete!");
                 queueTimeout(() => {
                     setIsLoading(false);
                     setCurrentView(1);
-                    startFlight(crashPoint, null, null);
+                    startFlight(crashPoint, target, betAmount);
                 }, 800);
             } else {
                 toast.info("Something went wrong..");
@@ -234,22 +214,6 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
         }
     };
 
-    /** Locks the current multiplier and pays out bet × multiplier. */
-    const handleCashOut = (): void => {
-        if (round.phase !== "running" || cashedOutRef.current !== null) return;
-
-        const lockedAt = round.multiplier;
-        cashedOutRef.current = lockedAt;
-
-        if (rafRef.current !== null) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
-        }
-
-        setRound((r) => ({ ...r, cashedOutAt: lockedAt }));
-        finishRound(activeBetRef.current * lockedAt, crashPointRef.current, 1800);
-    };
-
     const handleReset = (isPlayingAgain: boolean = false): void => {
         clearAllTimers();
 
@@ -258,8 +222,6 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
             setUserRandomWord(bytesToHex(new Uint8Array(randomBytes(32))));
         }
 
-        crashPointRef.current = 0;
-        cashedOutRef.current = null;
         activeBetRef.current = 0;
 
         setRound(INITIAL_ROUND);
@@ -295,17 +257,13 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
 
         clearAllTimers();
 
-        crashPointRef.current = record.crashPoint;
-        cashedOutRef.current = null;
-        activeBetRef.current = record.betAmount;
-
         setRound(INITIAL_ROUND);
         setPayout(null);
         setGameOver(false);
         setIsGameOngoing(false);
         setCurrentView(1);
 
-        startFlight(record.crashPoint, record.cashedOutAt, record.payout);
+        startFlight(record.crashPoint, record.target, record.betAmount);
     };
 
     const shouldShowPNL: boolean = !!payout && payout > (activeBetRef.current || 0);
@@ -338,7 +296,7 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                         open={gameOver}
                         payout={payout}
                         betAmount={activeBetRef.current || betAmount}
-                        cashedOutAt={round.cashedOutAt}
+                        targetHitAt={round.targetHitAt}
                         crashPoint={round.revealedCrashPoint}
                         playAgainText={playAgainText}
                         onPlayAgain={handlePlayAgain}
@@ -350,7 +308,6 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                 <MyGameSetupCard
                     game={game}
                     onPlay={async () => await playGame()}
-                    onCashOut={handleCashOut}
                     onRewatch={handleRewatch}
                     onReset={() => handleReset(false)}
                     onPlayAgain={async () => await handlePlayAgain()}
@@ -366,8 +323,8 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                     isGamePaused={false}
                     minBet={MIN_BET}
                     maxBet={MAX_BET}
-                    autoCashOutAt={autoCashOutAt}
-                    setAutoCashOutAt={setAutoCashOutAt}
+                    targetMultiplier={currentView === 0 ? targetMultiplier : activeTargetRef.current}
+                    setTargetMultiplier={setTargetMultiplier}
                 />
             </div>
         </div>

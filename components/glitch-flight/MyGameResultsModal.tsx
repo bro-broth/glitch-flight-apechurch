@@ -7,13 +7,13 @@ interface MyGameResultsModalProps {
     open: boolean;
     payout: number | null;
     betAmount: number;
-    cashedOutAt: number | null;
+    targetHitAt: number | null;
     crashPoint: number | null;
     playAgainText?: string;
     onPlayAgain: () => void;
     onRewatch: () => void;
     onReset: () => void;
-    /** Delay before the modal appears, so the crash / cash-out FX can finish. */
+    /** Delay before the modal appears, so the crash / target-hit FX can finish. */
     delayMs?: number;
 }
 
@@ -26,7 +26,7 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
     open,
     payout,
     betAmount,
-    cashedOutAt,
+    targetHitAt,
     crashPoint,
     playAgainText = "Play Again",
     onPlayAgain,
@@ -73,7 +73,7 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                         className="w-full max-w-[340px] rounded-2xl border border-white/10 bg-[#05070c] p-6 flex flex-col items-center text-white"
                     >
                         <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
-                            {won ? `Aped out at ${(cashedOutAt ?? 0).toFixed(2)}x` : "Flight over"}
+                            {won ? `Target hit at ${(targetHitAt ?? 0).toFixed(2)}x` : "Flight over"}
                         </span>
 
                         <div

@@ -2,7 +2,7 @@
   "team": "apedroidz",
   "gameName": "glitch-flight",
   "displayTitle": "Glitch Flight",
-  "description": "The glitch droid takes off and the multiplier climbs — cash out before the crash to win. The longer you ride, the bigger the payout, but one glitch too far and you lose it all.",
+  "description": "Pick a flight target and launch the glitch droid. Reach the target multiplier before the crash and win bet x target — crash first and the bet is gone.",
   "authors": [
     {
       "name": "ApeDroidz",
@@ -23,7 +23,8 @@
     "crash",
     "arcade",
     "flight",
-    "multiplier"
+    "multiplier",
+    "limbo"
   ],
   "thumbnail": "/glitch-flight/card.png",
   "banner": "/glitch-flight/banner.png",
