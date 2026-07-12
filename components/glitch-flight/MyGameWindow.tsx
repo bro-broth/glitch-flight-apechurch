@@ -699,8 +699,22 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                         justifyContent: "center",
                     }}
                 >
+                    {/* While loading, the platform dims the scene and shows its own
+                        "Loading..." label underneath (z-30). Re-draw the exact idle
+                        background above it so the loading state looks identical to
+                        the start screen. */}
                     {isLoading && (
-                        <div style={{ position: "absolute", inset: 0, background: "rgba(6,9,16,0.97)" }} />
+                        <div style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#060b14" }}>
+                            <img
+                                src={`${ASSET_BASE}/bg.webp`}
+                                alt=""
+                                draggable={false}
+                                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
+                                <img src={`${ASSET_BASE}/land.webp`} alt="" draggable={false} style={{ width: "100%", display: "block" }} />
+                            </div>
+                        </div>
                     )}
                     <div
                         style={{
