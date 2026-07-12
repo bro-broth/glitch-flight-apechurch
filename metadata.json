@@ -6,14 +6,14 @@
   "authors": [
     {
       "name": "ApeDroidz",
-      "telegram": "YOUR_TELEGRAM_USERNAME"
+      "telegram": "splitform"
     }
   ],
   "revenueShare": [
     {
       "name": "ApeDroidz",
-      "telegram": "YOUR_TELEGRAM_USERNAME",
-      "address": "0x0000000000000000000000000000000000000000",
+      "telegram": "splitform",
+      "address": "0x1DcF1d22A1dbDd20AE875beDEEe3A259b1D608db",
       "share": 100
     }
   ],

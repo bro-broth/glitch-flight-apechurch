@@ -319,15 +319,15 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
 
         if (prev !== "crashed" && phase === "crashed") {
             windAudioRef.current?.pause();
-            playSfx("boom.mp3", 0.6);
+            const tBoom = window.setTimeout(() => playSfx("boom.mp3", 0.6), 150);
             const t1 = window.setTimeout(() => setShowGraphic(false), 200);
             const t2 = window.setTimeout(() => {
                 setShowCrashText(true);
-                playSfx("whoosh.mp3", 0.4);
+                playSfx("whoosh.mp3", 0.24);
             }, 400);
             const t3 = window.setTimeout(() => {
                 setCrashTextExit(true);
-                playSfx("glitch.mp3", 0.45);
+                playSfx("glitch.mp3", 0.54);
             }, 2000);
             const t4 = window.setTimeout(() => setShowCrashText(false), 2500);
             return () => {
