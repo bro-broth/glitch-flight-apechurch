@@ -773,20 +773,19 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                             <p
                                 className="gf-mono"
                                 style={{
-                                    fontSize: Math.round(40 * Math.max(0.55, sf)),
-                                    lineHeight: 1.08,
+                                    fontSize: Math.round(52 * Math.max(0.5, sf)),
+                                    lineHeight: 1,
                                     fontWeight: 800,
                                     color: "#ffffff",
-                                    letterSpacing: "0.12em",
+                                    letterSpacing: "0",
                                     textTransform: "uppercase",
                                     textAlign: "center",
+                                    whiteSpace: "nowrap",
                                     margin: 0,
                                     textShadow: "0 0 18px rgba(255,255,255,0.55), 0 0 42px rgba(0,255,148,0.35)",
                                 }}
                             >
-                                Glitch
-                                <br />
-                                Flight
+                                Glitch Flight
                             </p>
                         )}
                     </div>
