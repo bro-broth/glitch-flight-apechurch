@@ -782,7 +782,6 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                                     textAlign: "center",
                                     whiteSpace: "nowrap",
                                     margin: 0,
-                                    textShadow: "0 0 18px rgba(255,255,255,0.55), 0 0 42px rgba(0,255,148,0.35)",
                                 }}
                             >
                                 Glitch Flight
