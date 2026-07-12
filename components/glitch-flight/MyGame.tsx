@@ -118,14 +118,17 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
     /**
      * Animates one fully-determined flight: the outcome is already fixed by
      * (crash point, target) — the droid either reaches the target (payout =
-     * bet x target) or crashes first (payout = 0). Used for live rounds and
-     * rewatch alike since both replay the same on-chain data.
+     * bet x target) or crashes first (payout = 0). After the target is hit
+     * the droid keeps flying (behind the results modal) until the round's
+     * actual crash point. Used for live rounds and rewatch alike since both
+     * replay the same on-chain data.
      */
     const startFlight = useCallback(
         (crashPoint: number, target: number, roundBet: number): void => {
             activeTargetRef.current = target;
             activeBetRef.current = roundBet;
             const willHitTarget = target < crashPoint;
+            let targetFired = false;
 
             const takeoff = performance.now();
             setRound({ ...INITIAL_ROUND, phase: "running", multiplier: 1.0 });
@@ -134,16 +137,19 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                 const m = multiplierAt(now - takeoff);
 
                 // Target check runs before the crash check so a frame that jumps
-                // past both still lands on the legitimately lower target.
-                if (willHitTarget && m >= target) {
+                // past both still pays the legitimately lower target. The flight
+                // itself continues to the crash point.
+                if (willHitTarget && !targetFired && m >= target) {
+                    targetFired = true;
                     setRound((r) => ({ ...r, multiplier: target, targetHitAt: target }));
                     finishRound(roundBet * target, crashPoint, 1800);
-                    return;
                 }
 
                 if (m >= crashPoint) {
                     setRound((r) => ({ ...r, phase: "crashed", multiplier: crashPoint }));
-                    finishRound(0, crashPoint, 2000);
+                    if (!targetFired) {
+                        finishRound(0, crashPoint, 2000);
+                    }
                     return;
                 }
 
@@ -291,7 +297,7 @@ const MyGameComponent: React.FC<MyGameComponentProps> = ({ game: gameProp }) => 
                     isGamePaused={false}
                     onSfxMutedChange={setSfxMuted}
                 >
-                    <MyGameWindow round={round} sfxMuted={sfxMuted} />
+                    <MyGameWindow round={round} sfxMuted={sfxMuted} isLoading={isLoading} />
                     <MyGameResultsModal
                         open={gameOver}
                         payout={payout}

@@ -1,5 +1,16 @@
-/* Glitch Flight — game-scoped animations and glitch layers. */
+/* Glitch Flight house font — same JetBrains Mono the apedroidz site uses. */
+@font-face {
+    font-family: "GF JetBrains Mono";
+    src: url("/glitch-flight/fonts/jetbrains-mono.woff2") format("woff2");
+    font-weight: 100 800;
+    font-style: normal;
+    font-display: swap;
+}
+.gf-mono {
+    font-family: "GF JetBrains Mono", "JetBrains Mono", ui-monospace, monospace;
+}
 
+/* Glitch Flight — game-scoped animations and glitch layers. */
 @keyframes gf-cloud-slide {
     from { transform: translate(0px, 0px) rotate(-24deg); }
     to   { transform: translate(-145vw, 64vh) rotate(-24deg); }

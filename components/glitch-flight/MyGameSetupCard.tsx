@@ -5,7 +5,6 @@ import { Game } from "@/lib/games";
 import BetAmountInput from "@/components/shared/BetAmountInput";
 import {
     FlightRound,
-    ASSET_BASE,
     TARGET_MIN,
     TARGET_MAX,
     clampTarget,
@@ -37,20 +36,14 @@ interface MyGameSetupCardProps {
     setTargetMultiplier: (value: number) => void;
 }
 
-/** Tiny uppercase mono label — the Glitch Flight house style. */
-function Label({ children }: { children: React.ReactNode }): React.ReactElement {
-    return (
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">
-            {children}
-        </span>
-    );
-}
+/** Two rows of six presets, all within the reachable crash range. */
+const TARGET_PRESETS: number[] = [1.2, 1.5, 2, 3, 5, 7.5, 10, 15, 20, 30, 50, 65];
 
-function StatRow({ label, value, valueClass = "text-white/80" }: { label: string; value: string; valueClass?: string }): React.ReactElement {
+function StatRow({ label, value, valueClass = "text-white" }: { label: string; value: string; valueClass?: string }): React.ReactElement {
     return (
-        <div className="w-full flex justify-between items-center gap-2">
-            <Label>{label}</Label>
-            <span className={`font-mono text-xs font-black ${valueClass}`}>{value}</span>
+        <div className="w-full flex justify-between items-center gap-2 text-xs font-medium">
+            <p className="text-[#91989C]">{label}</p>
+            <p className={`text-right font-semibold ${valueClass}`}>{value}</p>
         </div>
     );
 }
@@ -87,12 +80,6 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
         setTargetMultiplier(clamped);
     };
 
-    const stepTarget = (delta: number): void => {
-        const clamped = clampTarget(targetMultiplier + delta);
-        setTargetText(clamped.toFixed(2));
-        setTargetMultiplier(clamped);
-    };
-
     const isFlying = round.phase === "running" && round.targetHitAt === null;
     const targetHit = round.targetHitAt !== null;
 
@@ -107,17 +94,12 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
     const won = (payout ?? 0) > 0;
 
     return (
-        <div className="lg:basis-1/3 rounded-2xl border border-white/10 bg-[#05070c] p-5 sm:p-6 flex flex-col text-white selection:bg-white/20">
-            {/* ── Brand ── */}
-            <img
-                src={`${ASSET_BASE}/brand.svg`}
-                alt="ApeDroidz"
-                draggable={false}
-                className="mx-auto mb-5 h-9 w-auto opacity-90"
-            />
-
+        <div
+            className="lg:basis-1/3 rounded-2xl border border-white/10 bg-[#05070c] p-5 sm:p-6 flex flex-col text-white selection:bg-white/20"
+            style={{ "--theme-color": game.themeColorBackground } as React.CSSProperties}
+        >
             {inReplayMode && (
-                <p className="mb-4 font-mono text-xs font-black uppercase tracking-[0.3em] text-[#3b82f6] text-center">
+                <p className="mb-4 gf-mono text-xs font-black uppercase tracking-[0.3em] text-[#3b82f6] text-center">
                     Replay Mode
                 </p>
             )}
@@ -137,25 +119,13 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                         themeColorBackground={game.themeColorBackground}
                     />
 
-                    {/* ── Flight target — the droid flies exactly this far ── */}
-                    <div className="mt-6 flex flex-col gap-1">
-                        <Label>Flight Target</Label>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/20">
-                            Reach it before the crash to win bet x target
-                        </span>
-                    </div>
+                    {/* ── Flight target — same idiom as the bet block above ── */}
+                    <div className="mt-5 w-full space-y-2">
+                        <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-400">
+                            <p>Flight Target</p>
+                        </div>
 
-                    <div className="mt-3 flex items-center gap-2">
-                        <button
-                            type="button"
-                            aria-label="Decrease target"
-                            onClick={() => stepTarget(-0.5)}
-                            disabled={isLoading}
-                            className="h-10 w-10 shrink-0 rounded-lg border border-white/10 bg-white/5 font-mono text-base font-black text-white/60 transition-colors hover:border-white/25 hover:text-white"
-                        >
-                            −
-                        </button>
-                        <div className="relative flex-1">
+                        <div className="flex items-center gap-2 bg-gray-900/70 rounded-[8px] px-3 py-2.5">
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -164,36 +134,47 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                                 onBlur={(e) => commitTarget(e.target.value)}
                                 disabled={isLoading}
                                 aria-label={`Target multiplier (${TARGET_MIN}–${TARGET_MAX})`}
-                                className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pr-7 text-center font-mono text-sm font-black text-[#00FF94] outline-none focus:border-[#00FF94]/40"
+                                className="w-full bg-transparent p-0 border-0 focus:ring-0 focus:outline-none font-medium text-white"
                             />
-                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs font-black text-white/30">
-                                x
-                            </span>
+                            <span className="shrink-0 text-gray-400 font-medium">x</span>
                         </div>
-                        <button
-                            type="button"
-                            aria-label="Increase target"
-                            onClick={() => stepTarget(0.5)}
-                            disabled={isLoading}
-                            className="h-10 w-10 shrink-0 rounded-lg border border-white/10 bg-white/5 font-mono text-base font-black text-white/60 transition-colors hover:border-white/25 hover:text-white"
-                        >
-                            +
-                        </button>
+
+                        <div className="grid grid-cols-6 gap-2">
+                            {TARGET_PRESETS.map((preset) => {
+                                const active = Math.abs(targetMultiplier - preset) < 0.005;
+                                return (
+                                    <button
+                                        key={preset}
+                                        type="button"
+                                        onClick={() => commitTarget(String(preset))}
+                                        disabled={isLoading}
+                                        className={`text-xs font-semibold text-white py-1.5 border rounded-[5px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                                            active
+                                                ? "bg-(--theme-color)/40 border-(--theme-color)/60"
+                                                : "bg-gray-700/20 border-(--theme-color)/30 hover:bg-(--theme-color)/40 hover:border-(--theme-color)/60"
+                                        }`}
+                                    >
+                                        {preset}x
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="grow" />
 
-                    <div className="mt-8 flex flex-col gap-2">
+                    <div className="mt-8 rounded-[8px] border border-white/10 bg-gray-900/40 p-4 flex flex-col gap-2">
+                        <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass="text-[#00FF94]" />
+                        <StatRow label="Potential Payout" value={formatApe(targetWin)} valueClass="text-[#00FF94]" />
                         <StatRow label="Max Bet Per Flight" value={`${maxBet.toLocaleString([], { maximumFractionDigits: 0 })} APE`} />
-                        <StatRow label="Target Win" value={formatApe(targetWin)} valueClass="text-[#00FF94]" />
-                        <StatRow label="How To Play" value="Reach the target, win the flight" />
+                        <StatRow label="Wallet Balance" value={formatApe(walletBalance)} />
                     </div>
 
                     <button
                         type="button"
                         onClick={onPlay}
                         disabled={!canPlaceBet}
-                        className="mt-6 w-full rounded-xl bg-white py-3.5 font-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30 disabled:hover:bg-white"
+                        className="mt-6 w-full rounded-xl bg-white py-3.5 gf-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30 disabled:hover:bg-white"
                     >
                         Launch Flight
                     </button>
@@ -202,13 +183,13 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
 
             {currentView === 1 && (
                 <>
-                    <div className="flex flex-col gap-2">
+                    <div className="rounded-[8px] border border-white/10 bg-gray-900/40 p-4 flex flex-col gap-2">
                         <StatRow label="Bet Amount" value={formatApe(betAmount)} />
                         <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass="text-[#00FF94]" />
                         <StatRow
                             label="Target Win"
                             value={formatApe(targetWin)}
-                            valueClass="text-[#00FF94] drop-shadow-[0_0_10px_rgba(0,255,148,0.45)]"
+                            valueClass="text-[#00FF94]"
                         />
                     </div>
 
@@ -216,7 +197,7 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
 
                     {/* ── Flight status — no mid-flight decisions, resolution is on-chain ── */}
                     <div
-                        className={`mt-8 w-full rounded-xl py-4 text-center font-mono text-base font-black uppercase tracking-[0.2em] ${
+                        className={`mt-8 w-full rounded-xl py-4 text-center gf-mono text-base font-black uppercase tracking-[0.2em] ${
                             targetHit
                                 ? "border border-[#00FF94]/40 text-[#00FF94] drop-shadow-[0_0_14px_rgba(0,255,148,0.4)]"
                                 : isFlying
@@ -239,14 +220,14 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
 
             {currentView === 2 && (
                 <>
-                    <div className="flex flex-col gap-2">
+                    <div className="rounded-[8px] border border-white/10 bg-gray-900/40 p-4 flex flex-col gap-2">
                         <StatRow label="Bet Amount" value={formatApe(betAmount)} />
                         <StatRow
                             label="Total Payout"
                             value={formatApe(payout ?? 0)}
-                            valueClass={won ? "text-[#00FF94] drop-shadow-[0_0_10px_rgba(0,255,148,0.45)]" : "text-red-400"}
+                            valueClass={won ? "text-[#00FF94]" : "text-red-400"}
                         />
-                        <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass={won ? "text-[#00FF94]" : "text-white/80"} />
+                        <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass={won ? "text-[#00FF94]" : "text-white"} />
                         {round.revealedCrashPoint !== null && (
                             <StatRow label="Crash Point" value={`${round.revealedCrashPoint.toFixed(2)}x`} />
                         )}
@@ -260,7 +241,7 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                             type="button"
                             onClick={onPlayAgain}
                             disabled={isGamePaused}
-                            className="w-full rounded-xl bg-white py-3.5 font-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30"
+                            className="w-full rounded-xl bg-white py-3.5 gf-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85 disabled:opacity-30"
                         >
                             {playAgainText}
                         </button>
@@ -268,7 +249,7 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
                         <button
                             type="button"
                             onClick={onReset}
-                            className="w-full rounded-xl border border-white/15 bg-transparent py-3 font-mono text-xs font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
+                            className="w-full rounded-xl border border-white/15 bg-transparent py-3 gf-mono text-xs font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
                         >
                             Change Bet
                         </button>

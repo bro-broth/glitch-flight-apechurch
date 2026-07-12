@@ -63,7 +63,7 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                    className="absolute inset-0 z-40 flex items-center justify-center bg-black/45 backdrop-blur-[2px] p-4"
                 >
                     <motion.div
                         initial={{ scale: 0.9, y: 12 }}
@@ -72,12 +72,12 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                         transition={{ type: "spring", stiffness: 320, damping: 26 }}
                         className="w-full max-w-[340px] rounded-2xl border border-white/10 bg-[#05070c] p-6 flex flex-col items-center text-white"
                     >
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
+                        <span className="gf-mono text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
                             {won ? `Target hit at ${(targetHitAt ?? 0).toFixed(2)}x` : "Flight over"}
                         </span>
 
                         <div
-                            className={`mt-3 font-mono text-4xl font-black ${
+                            className={`mt-3 gf-mono text-4xl font-black ${
                                 won
                                     ? "text-[#00FF94] drop-shadow-[0_0_24px_rgba(0,255,148,0.6)]"
                                     : "text-red-400 drop-shadow-[0_0_18px_rgba(248,113,113,0.4)]"
@@ -88,19 +88,19 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
 
                         <div className="mt-5 w-full flex flex-col gap-2">
                             <div className="w-full flex justify-between items-center">
-                                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Bet</span>
-                                <span className="font-mono text-xs font-black text-white/80">{formatApe(betAmount)}</span>
+                                <span className="gf-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Bet</span>
+                                <span className="gf-mono text-xs font-black text-white/80">{formatApe(betAmount)}</span>
                             </div>
                             {!won && (
                                 <div className="w-full flex justify-between items-center">
-                                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Payout</span>
-                                    <span className="font-mono text-xs font-black text-red-400">0 APE</span>
+                                    <span className="gf-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Payout</span>
+                                    <span className="gf-mono text-xs font-black text-red-400">0 APE</span>
                                 </div>
                             )}
                             {crashPoint !== null && (
                                 <div className="w-full flex justify-between items-center">
-                                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Crash Point</span>
-                                    <span className="font-mono text-xs font-black text-white/80">{crashPoint.toFixed(2)}x</span>
+                                    <span className="gf-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Crash Point</span>
+                                    <span className="gf-mono text-xs font-black text-white/80">{crashPoint.toFixed(2)}x</span>
                                 </div>
                             )}
                         </div>
@@ -108,7 +108,7 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                         <button
                             type="button"
                             onClick={onPlayAgain}
-                            className="mt-6 w-full rounded-xl bg-white py-3 font-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85"
+                            className="mt-6 w-full rounded-xl bg-white py-3 gf-mono text-sm font-black uppercase tracking-[0.2em] text-black transition-colors hover:bg-white/85"
                         >
                             {playAgainText}
                         </button>
@@ -117,14 +117,14 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                             <button
                                 type="button"
                                 onClick={onRewatch}
-                                className="flex-1 rounded-xl border border-white/15 py-2.5 font-mono text-[11px] font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
+                                className="flex-1 rounded-xl border border-white/15 py-2.5 gf-mono text-[11px] font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
                             >
                                 Rewatch
                             </button>
                             <button
                                 type="button"
                                 onClick={onReset}
-                                className="flex-1 rounded-xl border border-white/15 py-2.5 font-mono text-[11px] font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
+                                className="flex-1 rounded-xl border border-white/15 py-2.5 gf-mono text-[11px] font-black uppercase tracking-[0.2em] text-white/60 transition-colors hover:border-white/30 hover:text-white"
                             >
                                 Change Bet
                             </button>

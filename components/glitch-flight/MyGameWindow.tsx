@@ -163,7 +163,7 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
                 animate={{ scale: 1, opacity: 1 }}
                 className="flex flex-col items-center gap-1"
             >
-                <div className={`text-4xl sm:text-6xl md:text-7xl font-black font-mono transition-all duration-75 ${color} ${glow}`}>
+                <div className={`text-4xl sm:text-6xl md:text-7xl font-black gf-mono transition-all duration-75 ${color} ${glow}`}>
                     {multiplier.toFixed(2)}x
                 </div>
 
@@ -175,7 +175,7 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
                         transition={{ type: "spring", damping: 14, stiffness: 260 }}
                         className="flex flex-col items-center gap-0.5 mt-1"
                     >
-                        <span className="text-xl sm:text-2xl font-black text-[#00FF94] drop-shadow-[0_0_18px_rgba(0,255,148,0.85)]">
+                        <span className="gf-mono text-xl sm:text-2xl font-black text-[#00FF94] drop-shadow-[0_0_18px_rgba(0,255,148,0.85)]">
                             TARGET HIT {targetHitAt.toFixed(2)}x
                         </span>
                     </motion.div>
@@ -189,10 +189,13 @@ function MultiplierOverlay({ round }: { round: FlightRound }): React.ReactElemen
 interface MyGameWindowProps {
     round: FlightRound;
     sfxMuted: boolean;
+    /** True while the bet transaction is pending — the platform shows its
+     * own "Loading..." label, so the splash caption steps aside. */
+    isLoading: boolean;
 }
 
 // ─── Main scene ───────────────────────────────────────────────────────────────
-const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
+const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading }) => {
     const { phase, multiplier, targetHitAt, revealedCrashPoint } = round;
 
     const [enterKey, setEnterKey] = useState<number>(0);
@@ -361,7 +364,6 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
     const intensity = phase === "running" ? glitchIntensity(multiplier) : 0;
     const graphicColor = phase === "crashed" ? "#f87171" : multiplierColor(multiplier);
     const showLand = phase === "idle";
-    const flying = phase === "running" && targetHitAt === null;
     // Once the round is over the platform UI (results modal / setup card)
     // takes over — the in-scene multiplier overlay disappears.
     const roundOver = revealedCrashPoint !== null;
@@ -459,7 +461,7 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                             position: "absolute",
                             width: "62%",
                             right: "50%",
-                            top: `calc(50% + ${Math.round(droidW * 0.38)}px)`,
+                            top: `calc(50% + ${Math.round(droidW * 0.3)}px)`,
                             zIndex: 2,
                             pointerEvents: "none",
                         }}
@@ -486,10 +488,11 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 <AnimatePresence mode="wait">
                     {phase === "running" && (
                         <motion.div
-                            key={`droid-${flying ? "fly" : "out"}`}
-                            initial={flying ? { x: "-38vw", y: "30vh", opacity: 0 } : { x: 0, y: 0, opacity: 1 }}
-                            animate={flying ? { x: 0, y: 0, opacity: 1 } : { x: "45vw", y: "-45vh", opacity: 0 }}
-                            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], opacity: { duration: flying ? 0.3 : 1.0 } }}
+                            key="droid"
+                            initial={{ x: "-38vw", y: "30vh", opacity: 0 }}
+                            animate={{ x: 0, y: 0, opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], opacity: { duration: 0.3 } }}
                             style={{ rotate: -22 }}
                         >
                             <img
@@ -656,7 +659,12 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                 </div>
             )}
 
-            {/* ── Idle hint ── */}
+            {/* ── Idle splash — the site's pre-round screen: the droid logo fully
+                 filled (no progress animation) with the launch caption under it.
+                 Held for the whole idle state. The group is raised above center
+                 and sits above the loading backdrop (z-40 vs z-30), so the
+                 platform's "Loading..." label appears below it while the bet
+                 transaction is pending. ── */}
             {phase === "idle" && (
                 <div
                     style={{
@@ -665,31 +673,45 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted }) => {
                         zIndex: 40,
                         pointerEvents: "none",
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        gap: 14,
                     }}
                 >
-                    <img
-                        src={`${ASSET_BASE}/logo.svg`}
-                        alt="Glitch Flight"
-                        draggable={false}
-                        style={{ width: Math.round(120 * Math.max(0.55, sf)), opacity: 0.9, display: "block" }}
-                    />
-                    <p
+                    <div
                         style={{
-                            fontFamily: "monospace",
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: "rgba(255,255,255,0.65)",
-                            letterSpacing: "0.22em",
-                            textTransform: "uppercase",
-                            margin: 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: Math.round(16 * Math.max(0.6, sf)),
+                            transform: `translateY(-${Math.round(106 * Math.max(0.7, sf))}px)`,
                         }}
                     >
-                        Place your bet to launch
-                    </p>
+                        <img
+                            src={`${ASSET_BASE}/logo.svg`}
+                            alt="Glitch Flight"
+                            draggable={false}
+                            style={{
+                                width: Math.round(112 * Math.max(0.55, sf)),
+                                display: "block",
+                            }}
+                        />
+                        {/* While loading, the platform's "Loading..." takes this spot. */}
+                        {!isLoading && (
+                            <p
+                                className="gf-mono"
+                                style={{
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: "rgba(255,255,255,1)",
+                                    letterSpacing: "0.22em",
+                                    textTransform: "uppercase",
+                                    margin: 0,
+                                }}
+                            >
+                                Preparing launch
+                            </p>
+                        )}
+                    </div>
                 </div>
             )}
 
