@@ -70,7 +70,7 @@ const MyGameResultsModal: React.FC<MyGameResultsModalProps> = ({
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 320, damping: 26 }}
-                        className="w-full max-w-[340px] rounded-2xl border border-white/10 bg-[#05070c] p-6 flex flex-col items-center text-white"
+                        className="w-full max-w-[340px] rounded-2xl border border-white/10 bg-[#0c1519]/80 backdrop-blur-md p-6 flex flex-col items-center text-white"
                     >
                         <span className="gf-mono text-[10px] font-bold uppercase tracking-[0.3em] text-white/30">
                             {won ? `Target hit at ${(targetHitAt ?? 0).toFixed(2)}x` : "Flight over"}

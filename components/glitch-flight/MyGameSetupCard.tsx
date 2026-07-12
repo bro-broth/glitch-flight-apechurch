@@ -93,9 +93,12 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
 
     const won = (payout ?? 0) > 0;
 
+    const liveColor =
+        round.phase === "crashed" ? "#f87171" : round.multiplier < 2 ? "#00FF94" : round.multiplier < 5 ? "#fde047" : "#fb923c";
+
     return (
         <div
-            className="lg:basis-1/3 rounded-2xl border border-white/10 bg-[#05070c] p-5 sm:p-6 flex flex-col text-white selection:bg-white/20"
+            className="lg:basis-1/3 rounded-2xl border border-white/10 bg-[#0c1519]/70 backdrop-blur-md p-5 sm:p-6 flex flex-col text-white selection:bg-white/20"
             style={{ "--theme-color": game.themeColorBackground } as React.CSSProperties}
         >
             {inReplayMode && (
@@ -182,37 +185,48 @@ const MyGameSetupCard: React.FC<MyGameSetupCardProps> = ({
 
             {currentView === 1 && (
                 <>
-                    <div className="rounded-[8px] border border-white/10 bg-gray-900/40 p-4 flex flex-col gap-2">
-                        <StatRow label="Bet Amount" value={formatApe(betAmount)} />
-                        <StatRow label="Flight Target" value={`${targetMultiplier.toFixed(2)}x`} valueClass="text-[#00FF94]" />
-                        <StatRow
-                            label="Target Win"
-                            value={formatApe(targetWin)}
-                            valueClass="text-[#00FF94]"
-                        />
+                    <div className="mt-2 flex flex-col items-center gap-1">
+                        <p className="text-sm font-medium text-gray-400">Current Multiplier</p>
+                        <p
+                            className="gf-mono text-5xl font-black text-[#00FF94] drop-shadow-[0_0_22px_rgba(0,255,148,0.45)]"
+                            style={{ color: liveColor }}
+                        >
+                            {round.multiplier.toFixed(2)}x
+                        </p>
                     </div>
 
                     <div className="grow" />
 
-                    {/* ── Flight status — no mid-flight decisions, resolution is on-chain ── */}
-                    <div
-                        className={`mt-8 w-full rounded-xl py-4 text-center gf-mono text-base font-black uppercase tracking-[0.2em] ${
-                            targetHit
-                                ? "border border-[#00FF94]/40 text-[#00FF94] drop-shadow-[0_0_14px_rgba(0,255,148,0.4)]"
-                                : isFlying
-                                    ? "border border-white/10 bg-white/5 text-white/70 animate-pulse"
-                                    : round.phase === "crashed"
-                                        ? "border border-red-500/30 text-red-400"
-                                        : "border border-white/10 bg-white/5 text-white/40"
-                        }`}
-                    >
-                        {targetHit
-                            ? `Target hit ${round.targetHitAt!.toFixed(2)}x`
-                            : isFlying
-                                ? `Flying to ${targetMultiplier.toFixed(2)}x…`
-                                : round.phase === "crashed"
-                                    ? "Crashed"
-                                    : "Launching…"}
+                    <div className="flex flex-col items-center gap-1 text-center">
+                        {targetHit ? (
+                            <>
+                                <p className="text-sm font-medium text-gray-400">Target hit at</p>
+                                <p className="gf-mono text-2xl font-black text-[#00FF94]">{round.targetHitAt!.toFixed(2)}x</p>
+                                <p className="mt-2 text-sm text-white/45 max-w-[260px]">
+                                    Payout locked in — the droid rides on until the crash.
+                                </p>
+                            </>
+                        ) : round.phase === "crashed" ? (
+                            <>
+                                <p className="text-sm font-medium text-gray-400">Crashed at</p>
+                                <p className="gf-mono text-2xl font-black text-red-400">{round.multiplier.toFixed(2)}x</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm font-medium text-gray-400">Cashing out at</p>
+                                <p className="gf-mono text-2xl font-black text-white">{targetMultiplier.toFixed(2)}x</p>
+                                <p className="mt-2 text-sm text-white/45 max-w-[260px]">
+                                    Target locked in — the run is already decided. Sit back and watch.
+                                </p>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="grow" />
+
+                    <div className="flex flex-col gap-2">
+                        <StatRow label="Bet Amount" value={formatApe(betAmount)} />
+                        <StatRow label="Potential Payout" value={formatApe(targetWin)} valueClass="text-[#00FF94]" />
                     </div>
                 </>
             )}

@@ -302,12 +302,14 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
 
         if (prev !== "running" && phase === "running") {
             hasFiredTargetAnim.current = false;
+            const preload = new Image();
+            preload.src = `${ASSET_BASE}/boom.gif?r=${boomKey + 1}`;
             if (!sfxMutedRef.current) {
                 if (!windAudioRef.current) {
                     windAudioRef.current = new Audio(`${ASSET_BASE}/sfx/wind.mp3`);
                     windAudioRef.current.loop = true;
                 }
-                windAudioRef.current.volume = 0.35;
+                windAudioRef.current.volume = 0.7;
                 windAudioRef.current.currentTime = 0;
                 windAudioRef.current.play().catch(() => {});
             }
@@ -320,7 +322,10 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
             playSfx("boom.mp3", 0.6);
             const t1 = window.setTimeout(() => setShowGraphic(false), 200);
             const t2 = window.setTimeout(() => setShowCrashText(true), 400);
-            const t3 = window.setTimeout(() => setCrashTextExit(true), 2000);
+            const t3 = window.setTimeout(() => {
+                setCrashTextExit(true);
+                playSfx("glitch.mp3", 0.45);
+            }, 2000);
             const t4 = window.setTimeout(() => setShowCrashText(false), 2500);
             return () => {
                 window.clearTimeout(t1);
