@@ -51,11 +51,15 @@ npx tsc --noEmit     # 0 ошибок
    public/glitch-flight/      →  public/submissions/glitch-flight/
    metadata.json              →  submissions/apedroidz/glitch-flight/metadata.json
    ```
-   И в `components/games/glitch-flight/myGameConfig.ts` поменять одну строку:
+   И поменять пути в двух местах:
    ```ts
+   // components/games/glitch-flight/myGameConfig.ts
    export const ASSET_BASE = "/submissions/glitch-flight";
    ```
-   (все пути к ассетам в коде идут через эту константу).
+   ```css
+   /* components/games/glitch-flight/glitch-flight.styles.css (@font-face) */
+   src: url("/submissions/glitch-flight/fonts/jetbrains-mono.woff2") format("woff2");
+   ```
 
 4. **PR** из fork в `main` репозитория submissions. Заголовок: `[ApeDroidz] Glitch Flight`. Один PR — одна игра, никаких других файлов (никаких package.json / tsconfig / app / lib).
 
