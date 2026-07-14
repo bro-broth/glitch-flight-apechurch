@@ -776,14 +776,13 @@ const MyGameWindow: React.FC<MyGameWindowProps> = ({ round, sfxMuted, isLoading 
                             </p>
                         ) : (
                             <p
-                                className="gf-mono"
+                                className="gf-inter"
                                 style={{
                                     fontSize: Math.round(52 * Math.max(0.5, sf)),
                                     lineHeight: 1,
-                                    fontWeight: 800,
+                                    fontWeight: 700,
                                     color: "#ffffff",
                                     letterSpacing: "0",
-                                    textTransform: "uppercase",
                                     textAlign: "center",
                                     whiteSpace: "nowrap",
                                     margin: 0,

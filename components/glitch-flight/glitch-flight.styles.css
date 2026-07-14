@@ -10,6 +10,17 @@
     font-family: "GF JetBrains Mono", "JetBrains Mono", ui-monospace, monospace;
 }
 
+@font-face {
+    font-family: "GF Inter";
+    src: url("/glitch-flight/fonts/inter-bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+.gf-inter {
+    font-family: "GF Inter", "Inter", sans-serif;
+}
+
 /* The shared BetAmountInput ships with a `no-spinner` class the template
    never defines — hide the native number-input arrows so the bet field
    matches the styled slider + preset controls. */
